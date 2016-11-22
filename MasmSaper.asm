@@ -15,8 +15,10 @@ includelib \masm32\lib\kernel32.lib
     CommandLine LPSTR ?
 
 .data
-    windowTitle db "Saper", 0
-    className  db "WinClass", 0
+    windowTitle      db "Saper", 0
+    authorPopupTitle db "Autor", 0
+    author           db "Lukasz Rutkowski", 0
+    className        db "WinClass", 0
 
 .code
 start:
@@ -30,7 +32,7 @@ start:
 WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
     LOCAL wc:WNDCLASSEX
     LOCAL msg:MSG
-    LOCAL hwnd:HWND
+    LOCAL hWnd:HWND
 
     mov wc.cbSize, SIZEOF WNDCLASSEX
     mov wc.style, CS_HREDRAW or CS_VREDRAW
@@ -42,6 +44,7 @@ WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
     pop wc.hInstance
 
     mov wc.hbrBackground, COLOR_WINDOW + 1
+    mov wc.lpszMenuName, NULL
     mov wc.lpszClassName, offset className
 
     invoke LoadIcon, 0, IDI_APPLICATION
@@ -67,9 +70,13 @@ WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
            hInst,
            0
 
-    mov hwnd, eax
-    invoke ShowWindow, hwnd, SW_SHOWNORMAL
-    invoke UpdateWindow, hwnd
+    mov hWnd, eax
+
+    invoke LoadMenu, hInst, 600
+    invoke SetMenu, hWnd, eax
+
+    invoke ShowWindow, hWnd, SW_SHOWNORMAL
+    invoke UpdateWindow, hWnd
 
     .WHILE TRUE
         invoke GetMessage, addr msg, 0, 0, 0
@@ -84,6 +91,12 @@ WinMain endp
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .IF uMsg == WM_DESTROY
         invoke PostQuitMessage, 0
+    .ELSEIF uMsg == WM_COMMAND
+        .IF wParam == 1000
+            invoke PostQuitMessage, 0
+        .ELSEIF wParam == 1900
+            invoke MessageBox, hWnd, addr author, addr authorPopupTitle, MB_OK
+        .ENDIF
     .ELSE
         invoke DefWindowProc, hWnd, uMsg, wParam, lParam
         ret
