@@ -44,11 +44,11 @@ WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
            0,
            addr className,
            addr windowTitle,
-           WS_OVERLAPPEDWINDOW or WS_VISIBLE,
+           WS_OVERLAPPED or WS_CAPTION or WS_SYSMENU or WS_MINIMIZEBOX,
            CW_USEDEFAULT,
            CW_USEDEFAULT,
-           300,
-           400,
+           270,
+           365,
            0,
            0,
            hInst,
@@ -135,7 +135,7 @@ DrawGrid proc hDC:DWORD
         mov y, 10
         mov endY, 30
         
-        .WHILE j < 10
+        .WHILE j < 12
             invoke Rectangle, hDC, x, y, endX, endY
             add y, 25
             add endY, 25
