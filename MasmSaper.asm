@@ -2,30 +2,7 @@
 .model flat, stdcall
 option casemap:none
 
-WinMain proto :DWORD, :DWORD, :DWORD, :DWORD
-Paint proto :DWORD, :DWORD
-DrawGrid proto :DWORD
-
-include \masm32\include\windows.inc
-include \masm32\include\user32.inc
-include \masm32\include\kernel32.inc
-include \masm32\include\gdi32.inc
-
-includelib \masm32\lib\user32.lib
-includelib \masm32\lib\kernel32.lib
-includelib \masm32\lib\gdi32.lib
-
-include \masm32\macros\macros.asm
-
-.data?
-    hInstance HINSTANCE ?
-    CommandLine LPSTR ?
-
-.data
-    windowTitle      db "Saper", 0
-    authorPopupTitle db "Autor", 0
-    author           db "Lukasz Rutkowski", 0
-    className        db "WinClass", 0
+include MasmSaper.inc
 
 .code
 start:
@@ -140,18 +117,18 @@ DrawGrid proc hDC:DWORD
     LOCAL endY:DWORD
     LOCAL color:DWORD
 
-    mov i, 0
-    mov x, 10
-    mov endX, 30
-
+    
+    ; Initialize brush
     invoke GetSysColor, COLOR_BTNSHADOW
     mov color, eax
-
-    ; Initialize brush
     invoke CreateSolidBrush, color
     mov brush, eax
     invoke SelectObject, hDC, brush
     mov oldBrush, eax
+    
+    mov i, 0
+    mov x, 10
+    mov endX, 30
 
     .WHILE i < 10
         mov j, 0
@@ -171,8 +148,6 @@ DrawGrid proc hDC:DWORD
         
         inc i
     .ENDW
-
-
 
     ; Cleanup
     invoke SelectObject, hDC, oldBrush
