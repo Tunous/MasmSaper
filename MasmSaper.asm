@@ -3,12 +3,19 @@
 option casemap:none
 
 WinMain proto :DWORD, :DWORD, :DWORD, :DWORD
+Paint proto :DWORD, :DWORD
+DrawGrid proto :DWORD
 
 include \masm32\include\windows.inc
 include \masm32\include\user32.inc
 include \masm32\include\kernel32.inc
+include \masm32\include\gdi32.inc
+
 includelib \masm32\lib\user32.lib
 includelib \masm32\lib\kernel32.lib
+includelib \masm32\lib\gdi32.lib
+
+include \masm32\macros\macros.asm
 
 .data?
     hInstance HINSTANCE ?
@@ -89,6 +96,9 @@ WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
 WinMain endp
 
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+    LOCAL hDC:DWORD
+    LOCAL Ps:PAINTSTRUCT
+    
     .IF uMsg == WM_DESTROY
         invoke PostQuitMessage, 0
     .ELSEIF uMsg == WM_COMMAND
@@ -97,12 +107,78 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         .ELSEIF wParam == 1900
             invoke MessageBox, hWnd, addr author, addr authorPopupTitle, MB_OK
         .ENDIF
+    .ELSEIF uMsg == WM_CREATE
+        ;szText button1, "PRZYCISK"
+        ;invoke PushButton, addr button1, hWnd, 10, 10, 100, 20, 1900
+    .ELSEIF uMsg == WM_PAINT
+        invoke BeginPaint, hWnd, addr Ps
+        mov hDC, eax
+        invoke Paint, hWnd, hDC
+        invoke EndPaint, hWnd, addr Ps
     .ELSE
         invoke DefWindowProc, hWnd, uMsg, wParam, lParam
         ret
     .ENDIF
+    
     xor eax, eax
     ret
 WndProc endp
+
+Paint proc hWnd:DWORD, hDC:DWORD
+    invoke DrawGrid, hDC
+    ret
+Paint endp
+
+DrawGrid proc hDC:DWORD
+    LOCAL brush:DWORD
+    LOCAL oldBrush:DWORD
+    LOCAL i:DWORD
+    LOCAL j:DWORD
+    LOCAL x:DWORD
+    LOCAL y:DWORD
+    LOCAL endX:DWORD
+    LOCAL endY:DWORD
+    LOCAL color:DWORD
+
+    mov i, 0
+    mov x, 10
+    mov endX, 30
+
+    invoke GetSysColor, COLOR_BTNSHADOW
+    mov color, eax
+
+    ; Initialize brush
+    invoke CreateSolidBrush, color
+    mov brush, eax
+    invoke SelectObject, hDC, brush
+    mov oldBrush, eax
+
+    .WHILE i < 10
+        mov j, 0
+        mov y, 10
+        mov endY, 30
+        
+        .WHILE j < 10
+            invoke Rectangle, hDC, x, y, endX, endY
+            add y, 25
+            add endY, 25
+
+            inc j
+        .ENDW
+        
+        add x, 25
+        add endX, 25
+        
+        inc i
+    .ENDW
+
+
+
+    ; Cleanup
+    invoke SelectObject, hDC, oldBrush
+    invoke DeleteObject, brush
+
+    ret
+DrawGrid endp
 
 end start
