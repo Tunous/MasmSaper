@@ -47,8 +47,8 @@ WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
            WS_OVERLAPPED or WS_CAPTION or WS_SYSMENU or WS_MINIMIZEBOX,
            CW_USEDEFAULT,
            CW_USEDEFAULT,
-           270,
-           365,
+           255,
+           355,
            0,
            0,
            hInst,
@@ -134,12 +134,12 @@ DrawGrid proc hDC:DWORD
     mov x, 10
     mov endX, 30
 
-    .WHILE i < 10
+    .WHILE i < 12
         mov j, 0
         mov y, 10
         mov endY, 30
         
-        .WHILE j < 12
+        .WHILE j < 15
             invoke Rectangle, hDC, x, y, endX, endY
             push x
             push y
@@ -149,14 +149,14 @@ DrawGrid proc hDC:DWORD
             invoke TextOut, hDC, x, y, addr num, sizeof num - 1
             pop y
             pop x
-            add y, 25
-            add endY, 25
+            add y, 19
+            add endY, 19
 
             inc j
         .ENDW
         
-        add x, 25
-        add endX, 25
+        add x, 19
+        add endX, 19
         
         inc i
     .ENDW
