@@ -116,6 +116,8 @@ DrawGrid proc hDC:DWORD
     LOCAL endX:DWORD
     LOCAL endY:DWORD
     LOCAL color:DWORD
+    LOCAL originalAlign:DWORD
+    LOCAL originalBkMode:DWORD
 
     szText num, "4"
     
@@ -127,7 +129,12 @@ DrawGrid proc hDC:DWORD
     invoke SelectObject, hDC, brush
     mov oldBrush, eax
 
+    ; Make the background behind text transparent
     invoke SetBkMode, hDC, TRANSPARENT
+    mov originalBkMode, eax
+
+    invoke GetTextAlign, hDC
+    mov originalAlign, eax
     invoke SetTextAlign, hDC, TA_CENTER or VTA_CENTER or TA_NOUPDATECP
     
     mov i, 0
@@ -164,6 +171,8 @@ DrawGrid proc hDC:DWORD
     ; Cleanup
     invoke SelectObject, hDC, oldBrush
     invoke DeleteObject, brush
+    invoke SetBkMode, hDC, originalBkMode
+    invoke SetTextAlign, hDC, originalAlign
 
     ret
 DrawGrid endp
