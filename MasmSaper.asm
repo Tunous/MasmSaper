@@ -117,6 +117,7 @@ DrawGrid proc hDC:DWORD
     LOCAL endY:DWORD
     LOCAL color:DWORD
 
+    szText num, "4"
     
     ; Initialize brush
     invoke GetSysColor, COLOR_BTNSHADOW
@@ -125,6 +126,9 @@ DrawGrid proc hDC:DWORD
     mov brush, eax
     invoke SelectObject, hDC, brush
     mov oldBrush, eax
+
+    invoke SetBkMode, hDC, TRANSPARENT
+    invoke SetTextAlign, hDC, TA_CENTER or VTA_CENTER or TA_NOUPDATECP
     
     mov i, 0
     mov x, 10
@@ -137,6 +141,14 @@ DrawGrid proc hDC:DWORD
         
         .WHILE j < 12
             invoke Rectangle, hDC, x, y, endX, endY
+            push x
+            push y
+            add x, 10
+            add y, 2
+
+            invoke TextOut, hDC, x, y, addr num, sizeof num - 1
+            pop y
+            pop x
             add y, 25
             add endY, 25
 
