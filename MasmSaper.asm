@@ -4,6 +4,9 @@ option casemap:none
 
 include MasmSaper.inc
 
+.data
+    star db "*", 0
+
 .code
 start:
     invoke GetModuleHandle, 0
@@ -118,8 +121,6 @@ DrawGrid proc hDC:DWORD
     LOCAL color:DWORD
     LOCAL originalAlign:DWORD
     LOCAL originalBkMode:DWORD
-
-    szText num, "4"
     
     ; Initialize brush
     invoke GetSysColor, COLOR_BTNSHADOW
@@ -151,25 +152,27 @@ DrawGrid proc hDC:DWORD
         
         .WHILE j < 15
             invoke Rectangle, hDC, x, y, endX, endY
-            push x
-            push y
-            add x, 10
-            add y, 2
 
             invoke nrandom, 9
-            invoke dwtoa, eax, offset lpszNumber
-            invoke TextOut, hDC, x, y, addr lpszNumber, sizeof lpszNumber - 1
-            pop y
-            pop x
+            .IF eax == 0
+                push x
+                push y
+                add x, 10
+                add y, 2
+
+                ;invoke dwtoa, eax, offset lpszNumber
+                invoke TextOut, hDC, x, y, addr star, sizeof star - 1
+                pop y
+                pop x
+            .ENDIF
+            
             add y, 19
             add endY, 19
-
             inc j
         .ENDW
         
         add x, 19
         add endX, 19
-        
         inc i
     .ENDW
 
