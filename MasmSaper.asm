@@ -140,6 +140,9 @@ DrawGrid proc hDC:DWORD
     mov i, 0
     mov x, 10
     mov endX, 30
+    
+    invoke GetTickCount
+    invoke nseed, eax
 
     .WHILE i < 12
         mov j, 0
@@ -153,7 +156,9 @@ DrawGrid proc hDC:DWORD
             add x, 10
             add y, 2
 
-            invoke TextOut, hDC, x, y, addr num, sizeof num - 1
+            invoke nrandom, 9
+            invoke dwtoa, eax, offset lpszNumber
+            invoke TextOut, hDC, x, y, addr lpszNumber, sizeof lpszNumber - 1
             pop y
             pop x
             add y, 19

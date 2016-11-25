@@ -1,14 +1,4 @@
-include \masm32\include\windows.inc
-include \masm32\include\user32.inc
-include \masm32\include\kernel32.inc
-include \masm32\include\gdi32.inc
-
-includelib \masm32\lib\user32.lib
-includelib \masm32\lib\kernel32.lib
-includelib \masm32\lib\gdi32.lib
-
-include \masm32\macros\macros.asm
-
+include \masm32\include\masm32rt.inc
 
 WinMain proto :DWORD, :DWORD, :DWORD, :DWORD
 WndProc proto :HWND, :UINT, :WPARAM, :LPARAM
@@ -19,6 +9,7 @@ DrawGrid proto :DWORD
 .data?
     hInstance HINSTANCE ?
     CommandLine LPSTR ?
+    lpszNumber db 2 dup (?)
 
 .data
     windowTitle      db "Saper", 0
