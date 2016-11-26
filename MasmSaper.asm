@@ -6,6 +6,7 @@ include MasmSaper.inc
 
 .data
     star db "*", 0
+    showAll DWORD 0
 
 .data?
     mineGenerationArray db 180 dup (?)
@@ -153,7 +154,7 @@ GenerateGrid proc
     mov edi, OFFSET visibilityArray
 
     .WHILE ebx < gridSize
-        mov eax, 1
+        mov eax, 0
         mov [edi + 4 * ebx], eax                    ; Reset visiblity array
         
         mov mines, 0                                ; Reset count
@@ -331,6 +332,13 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         .IF wParam == 500
             invoke GenerateGrid
             invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE
+        .ELSEIF wParam == 600
+            .IF showAll == 1
+                mov showAll, 0
+            .ELSE
+                mov showAll, 1
+            .ENDIF
+            invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE
         .ELSEIF wParam == 1000
             invoke PostQuitMessage, 0
         .ELSEIF wParam == 1900
@@ -401,7 +409,7 @@ DrawGrid proc hDC:DWORD
 
             invoke GetArrayElementXY, OFFSET visibilityArray, i, j
 
-            .IF eax != 0
+            .IF eax != 0 || showAll == 1
                 push x
                 push y
                 add x, 10

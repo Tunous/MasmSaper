@@ -3,6 +3,7 @@ BEGIN
 	POPUP "&Menu ", , , 0
 	BEGIN
 		MENUITEM "&Nowa Gra", 500
+		MENUITEM "&Pokaz", 600
 		MENUITEM "&Wyjscie", 1000
 	END
 	POPUP "&Pomoc", , , 0
