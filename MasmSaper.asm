@@ -87,13 +87,23 @@ GenerateGrid proc
     invoke nseed, eax
     invoke ShuffleArray, OFFSET mineGenerationArray, gridSize
 
-    ; Select fixed amount of randomized positions for mines
+
     mov esi, OFFSET grid
     mov edi, OFFSET mineGenerationArray
+
     xor ebx, ebx
+    mov edx, 0
+
+    ; Clear the grid
+    .WHILE ebx < gridSize
+        mov [esi + 4 * ebx], edx
+        inc ebx
+    .ENDW
+
+    xor ebx, ebx
+    mov edx, -1
     
-    mov edx, -1                     ; Mine is identified by -1
-    
+    ; Select fixed amount of randomized positions for mines
     .WHILE ebx < 30
         mov ecx, [edi + 4 * ebx]    ; Get position from first array
         mov [esi + 4 * ecx], edx    ; And place mine at that position in actual array
@@ -192,7 +202,10 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .IF uMsg == WM_DESTROY
         invoke PostQuitMessage, 0
     .ELSEIF uMsg == WM_COMMAND
-        .IF wParam == 1000
+        .IF wParam == 500
+            invoke GenerateGrid
+            invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE
+        .ELSEIF wParam == 1000
             invoke PostQuitMessage, 0
         .ELSEIF wParam == 1900
             invoke MessageBox, hWnd, addr author, addr authorPopupTitle, MB_OK
