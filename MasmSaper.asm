@@ -25,6 +25,39 @@ start:
     invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
     invoke ExitProcess, eax
 
+Multiply32 proc a:DWORD, b:DWORD
+    push ebx
+
+    xor edx, edx
+    mov eax, a
+    mov ebx, b
+    mul ebx
+
+    pop ebx
+
+    return eax
+Multiply32 endp
+
+Divide32 proc a:DWORD, b:DWORD
+    push ebx
+
+    xor edx, edx
+    mov eax, a
+    mov ebx, b
+    div ebx
+
+    pop ebx
+
+    return eax, edx
+Divide32 endp
+
+ConvertToArrayPos proc x:DWORD, y:DWORD
+    invoke Multiply32, y, GRID_WIDTH
+    add eax, x
+
+    return eax
+ConvertToArrayPos endp
+
 ShuffleArray proc arr:DWORD, arraySize:DWORD
     LOCAL lArraySize  :DWORD
 
@@ -56,25 +89,6 @@ ShuffleArray proc arr:DWORD, arraySize:DWORD
     ret
 ShuffleArray endp
 
-GetArrayElementXY proc arr:DWORD, x:DWORD, y:DWORD
-    push ecx
-    push esi
-    
-    ; GRID_WIDTH * y + x
-    mov eax, GRID_WIDTH
-    mov ecx, y
-    mul ecx
-    add eax, x
-
-    mov esi, arr
-    mov eax, [esi + 4 * eax]
-
-    pop esi
-    pop ecx
-
-    return eax
-GetArrayElementXY endp
-
 GetArrayElement proc arr:DWORD, i:DWORD
     push esi
     
@@ -86,6 +100,13 @@ GetArrayElement proc arr:DWORD, i:DWORD
 
     return eax
 GetArrayElement endp
+
+GetArrayElementXY proc arr:DWORD, x:DWORD, y:DWORD
+    invoke ConvertToArrayPos, x, y
+    invoke GetArrayElement, arr, eax
+
+    return eax
+GetArrayElementXY endp
 
 IncrementIfMine proc mines:DWORD
     mov ecx, [esi + 4 * ebx]
@@ -107,9 +128,7 @@ GenerateGrid proc
     push edx
 
     ; Calculate size of the grid: width * height
-    mov eax, GRID_WIDTH
-    mov ebx, GRID_HEIGHT
-    mul ebx
+    invoke Multiply32, GRID_WIDTH, GRID_HEIGHT
     mov gridSize, eax   
 
     ; Initialize array holding positions for mines
@@ -163,10 +182,7 @@ GenerateGrid proc
         .IF ecx != -1                               ; Skip mines
             push ebx                                ; Store current position
 
-            xor edx, edx
-            mov eax, ebx
-            mov ebx, GRID_WIDTH
-            div ebx                                 ; Calculate "position" / "width" to access remainder from edx
+            invoke Divide32, ebx, GRID_WIDTH
 
             pop ebx
             push ebx
@@ -322,45 +338,56 @@ WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
     ret
 WinMain endp
 
+RevealAt proc x:DWORD, y:DWORD
+    push esi
+    push ebx
+
+    mov esi, OFFSET visibilityArray
+    mov ebx, 1
+    invoke ConvertToArrayPos, x, y
+    mov [esi + 4 * eax], ebx
+
+    pop ebx
+    pop esi
+    
+    ret
+RevealAt endp
+
 HandleMouse proc lParam:LPARAM, hWnd:HWND
     LOCAL x:DWORD
     LOCAL y:DWORD
+    LOCAL maxX:DWORD
+    LOCAL maxY:DWORD
+
+    invoke Multiply32, 19, GRID_WIDTH
+    mov maxX, eax
+
+    invoke Multiply32, 19, GRID_HEIGHT
+    mov maxY, eax
 
     mov eax, lParam
     and eax, 0FFFFh
     sub eax, 10
 
-    .IF eax < 0 || eax >= 228
+    .IF eax < 0 || eax >= maxX
         ret
     .ENDIF
 
-    xor edx, edx
-    mov ebx, 19
-    div ebx
+    invoke Divide32, eax, 19
     mov x, eax
     
     mov eax, lParam
     shr eax, 16
     sub eax, 10
 
-    .IF eax < 0 || eax >= 285
+    .IF eax < 0 || eax >= maxY
         ret
     .ENDIF
 
-    xor edx, edx
-    mov ebx, 19
-    div ebx
+    invoke Divide32, eax, 19
     mov y, eax
 
-    mov eax, y
-    mov ebx, GRID_WIDTH
-    mul ebx
-    add eax, x
-
-    mov esi, OFFSET visibilityArray
-    mov ecx, 1
-    mov [esi + 4 * eax], ecx
-
+    invoke RevealAt, x, y
     invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE 
 
     ret
