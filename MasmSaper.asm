@@ -322,6 +322,50 @@ WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
     ret
 WinMain endp
 
+HandleMouse proc lParam:LPARAM, hWnd:HWND
+    LOCAL x:DWORD
+    LOCAL y:DWORD
+
+    mov eax, lParam
+    and eax, 0FFFFh
+    sub eax, 10
+
+    .IF eax < 0 || eax >= 228
+        ret
+    .ENDIF
+
+    xor edx, edx
+    mov ebx, 19
+    div ebx
+    mov x, eax
+    
+    mov eax, lParam
+    shr eax, 16
+    sub eax, 10
+
+    .IF eax < 0 || eax >= 285
+        ret
+    .ENDIF
+
+    xor edx, edx
+    mov ebx, 19
+    div ebx
+    mov y, eax
+
+    mov eax, y
+    mov ebx, GRID_WIDTH
+    mul ebx
+    add eax, x
+
+    mov esi, OFFSET visibilityArray
+    mov ecx, 1
+    mov [esi + 4 * eax], ecx
+
+    invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE 
+
+    ret
+HandleMouse endp
+
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL hDC:DWORD
     LOCAL Ps:PAINTSTRUCT
@@ -352,6 +396,10 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         mov hDC, eax
         invoke Paint, hWnd, hDC
         invoke EndPaint, hWnd, addr Ps
+
+    .ELSEIF uMsg == WM_LBUTTONDOWN
+        invoke HandleMouse, lParam, hWnd
+
     .ELSE
         invoke DefWindowProc, hWnd, uMsg, wParam, lParam
         ret
