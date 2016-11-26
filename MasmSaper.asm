@@ -7,6 +7,10 @@ include MasmSaper.inc
 .data
     star db "*", 0
 
+.const
+    GRID_WIDTH DWORD 12
+    GRID_HEIGHT DWORD 15
+
 .code
 start:
     invoke GetModuleHandle, 0
@@ -15,6 +19,41 @@ start:
     mov CommandLine, eax
     invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
     invoke ExitProcess, eax
+
+GetGridElement proc x:DWORD, y:DWORD
+    ; GRID_WIDTH * y + x
+    mov eax, GRID_WIDTH
+    mov ecx, y
+    mul ecx
+    add eax, x
+
+    mov esi, OFFSET grid
+    mov eax, [esi + 4 * eax]
+
+    ret
+GetGridElement endp
+
+GenerateGrid proc
+    LOCAL gridSize:DWORD
+    invoke GetTickCount
+    invoke nseed, eax
+
+    ; GRID_WIDTH * GRID_HEIGHT
+    mov eax, GRID_WIDTH
+    mov ebx, GRID_HEIGHT
+    mul ebx
+    mov gridSize, eax
+
+    mov esi, OFFSET grid
+    xor ebx, ebx
+
+    .WHILE ebx < gridSize
+        invoke nrandom, 9
+        mov [esi + 4 * ebx], eax
+        inc ebx
+    .ENDW
+    ret
+GenerateGrid endp
 
 WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
     LOCAL wc:WNDCLASSEX
@@ -61,6 +100,8 @@ WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
 
     invoke LoadMenu, hInst, 600
     invoke SetMenu, hWnd, eax
+
+    invoke GenerateGrid
 
     invoke ShowWindow, hWnd, SW_SHOWNORMAL
     invoke UpdateWindow, hWnd
@@ -141,9 +182,6 @@ DrawGrid proc hDC:DWORD
     mov i, 0
     mov x, 10
     mov endX, 30
-    
-    invoke GetTickCount
-    invoke nseed, eax
 
     .WHILE i < 12
         mov j, 0
@@ -153,7 +191,8 @@ DrawGrid proc hDC:DWORD
         .WHILE j < 15
             invoke Rectangle, hDC, x, y, endX, endY
 
-            invoke nrandom, 9
+            invoke GetGridElement, i, j
+
             .IF eax == 0
                 push x
                 push y

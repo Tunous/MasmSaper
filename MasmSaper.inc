@@ -16,3 +16,4 @@ DrawGrid proto :DWORD
     authorPopupTitle db "Autor", 0
     author           db "Lukasz Rutkowski", 0
     className        db "WinClass", 0
+    grid             DWORD 180 dup (?)
