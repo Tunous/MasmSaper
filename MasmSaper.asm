@@ -7,6 +7,9 @@ include MasmSaper.inc
 .data
     star db "*", 0
 
+.data?
+    mineGenerationArray db 180 dup (?)
+
 .const
     GRID_WIDTH DWORD 12
     GRID_HEIGHT DWORD 15
@@ -19,6 +22,92 @@ start:
     mov CommandLine, eax
     invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
     invoke ExitProcess, eax
+
+; ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+
+ShuffleArray proc arr:DWORD, arraySize:DWORD
+    LOCAL lArraySize  :DWORD
+
+    mov eax, arraySize
+    mov lArraySize, eax
+
+    push ebx
+    push esi
+    push edi
+
+    mov esi, arr
+    mov edi, arr
+    xor ebx, ebx
+
+    .WHILE lArraySize > 0
+        invoke nrandom, arraySize   ; Get the random number within "arraySize" range
+        mov ecx, [esi+ebx*4]        ; Get the incremental pointer
+        mov edx, [edi+eax*4]        ; Get the random pointer
+        mov [esi+ebx*4], edx        ; Write random pointer back to incremental location
+        mov [edi+eax*4], ecx        ; Write incremental pointer back to random location
+        add ebx, 1                  ; Increment the original pointer
+        sub lArraySize, 1           ; Decrement the loop counter
+    .ENDW
+
+    pop edi
+    pop esi
+    pop ebx
+
+    ret
+ShuffleArray endp
+
+; ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+
+GenerateGrid proc
+    LOCAL gridSize:DWORD
+
+    push ebx
+    push esi
+    push edi
+    push ecx
+    push edx
+
+    ; Calculate size of the grid: width * height
+    mov eax, GRID_WIDTH
+    mov ebx, GRID_HEIGHT
+    mul ebx
+    mov gridSize, eax   
+
+    ; Initialize array holding positions for mines
+    mov esi, OFFSET mineGenerationArray
+    xor ebx, ebx
+
+    .WHILE ebx < gridSize
+        mov [esi + 4 * ebx], ebx
+        inc ebx
+    .ENDW
+
+    ; Shuffle it to always get random position
+    invoke GetTickCount
+    invoke nseed, eax
+    invoke ShuffleArray, OFFSET mineGenerationArray, gridSize
+
+    ; Select fixed amount of randomized positions for mines
+    mov esi, OFFSET grid
+    mov edi, OFFSET mineGenerationArray
+    xor ebx, ebx
+    
+    mov edx, -1                     ; Mine is identified by -1
+    
+    .WHILE ebx < 30
+        mov ecx, [edi + 4 * ebx]    ; Get position from first array
+        mov [esi + 4 * ecx], edx    ; And place mine at that position in actual array
+        inc ebx
+    .ENDW
+
+    pop edx
+    pop ecx
+    pop edi
+    pop esi
+    pop ebx
+
+    ret
+GenerateGrid endp
 
 GetGridElement proc x:DWORD, y:DWORD
     ; GRID_WIDTH * y + x
@@ -33,27 +122,7 @@ GetGridElement proc x:DWORD, y:DWORD
     ret
 GetGridElement endp
 
-GenerateGrid proc
-    LOCAL gridSize:DWORD
-    invoke GetTickCount
-    invoke nseed, eax
-
-    ; GRID_WIDTH * GRID_HEIGHT
-    mov eax, GRID_WIDTH
-    mov ebx, GRID_HEIGHT
-    mul ebx
-    mov gridSize, eax
-
-    mov esi, OFFSET grid
-    xor ebx, ebx
-
-    .WHILE ebx < gridSize
-        invoke nrandom, 9
-        mov [esi + 4 * ebx], eax
-        inc ebx
-    .ENDW
-    ret
-GenerateGrid endp
+; ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
 
 WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
     LOCAL wc:WNDCLASSEX
@@ -193,7 +262,7 @@ DrawGrid proc hDC:DWORD
 
             invoke GetGridElement, i, j
 
-            .IF eax == 0
+            .IF eax == -1
                 push x
                 push y
                 add x, 10
