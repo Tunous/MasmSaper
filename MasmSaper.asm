@@ -9,6 +9,7 @@ include MasmSaper.inc
 
 .data?
     mineGenerationArray db 180 dup (?)
+    visibilityArray db 180 dup (?)
 
 .const
     GRID_WIDTH DWORD 12
@@ -22,8 +23,6 @@ start:
     mov CommandLine, eax
     invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
     invoke ExitProcess, eax
-
-; �������������������������������������������������������������������������
 
 ShuffleArray proc arr:DWORD, arraySize:DWORD
     LOCAL lArraySize  :DWORD
@@ -56,7 +55,36 @@ ShuffleArray proc arr:DWORD, arraySize:DWORD
     ret
 ShuffleArray endp
 
-; �������������������������������������������������������������������������
+GetArrayElementXY proc arr:DWORD, x:DWORD, y:DWORD
+    push ecx
+    push esi
+    
+    ; GRID_WIDTH * y + x
+    mov eax, GRID_WIDTH
+    mov ecx, y
+    mul ecx
+    add eax, x
+
+    mov esi, arr
+    mov eax, [esi + 4 * eax]
+
+    pop esi
+    pop ecx
+
+    return eax
+GetArrayElementXY endp
+
+GetArrayElement proc arr:DWORD, i:DWORD
+    push esi
+    
+    mov esi, arr
+    mov eax, i
+    mov eax, [esi + 4 * eax]
+
+    pop esi
+
+    return eax
+GetArrayElement endp
 
 IncrementIfMine proc mines:DWORD
     mov ecx, [esi + 4 * ebx]
@@ -122,8 +150,12 @@ GenerateGrid proc
 
     xor ebx, ebx
 
-    ; Calculate near mines counts
+    mov edi, OFFSET visibilityArray
+
     .WHILE ebx < gridSize
+        mov eax, 1
+        mov [edi + 4 * ebx], eax                    ; Reset visiblity array
+        
         mov mines, 0                                ; Reset count
         mov ecx, [esi + 4 * ebx]                    ; Get grid element
 
@@ -227,21 +259,6 @@ GenerateGrid proc
 
     ret
 GenerateGrid endp
-
-GetGridElement proc x:DWORD, y:DWORD
-    ; GRID_WIDTH * y + x
-    mov eax, GRID_WIDTH
-    mov ecx, y
-    mul ecx
-    add eax, x
-
-    mov esi, OFFSET grid
-    mov eax, [esi + 4 * eax]
-
-    ret
-GetGridElement endp
-
-; �������������������������������������������������������������������������
 
 WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
     LOCAL wc:WNDCLASSEX
@@ -382,20 +399,24 @@ DrawGrid proc hDC:DWORD
         .WHILE j < 15
             invoke Rectangle, hDC, x, y, endX, endY
 
-            push x
-            push y
-            add x, 10
-            add y, 2
+            invoke GetArrayElementXY, OFFSET visibilityArray, i, j
 
-            invoke GetGridElement, i, j
-            .IF eax == -1
-                invoke TextOut, hDC, x, y, addr star, sizeof star - 1
-            .ELSE
-                invoke dwtoa, eax, OFFSET lpszNumber
-                invoke TextOut, hDC, x, y, addr lpszNumber, sizeof lpszNumber - 1
+            .IF eax != 0
+                push x
+                push y
+                add x, 10
+                add y, 2
+    
+                invoke GetArrayElementXY, OFFSET grid, i, j
+                .IF eax == -1
+                    invoke TextOut, hDC, x, y, addr star, sizeof star - 1
+                .ELSE
+                    invoke dwtoa, eax, OFFSET lpszNumber
+                    invoke TextOut, hDC, x, y, addr lpszNumber, sizeof lpszNumber - 1
+                .ENDIF
+                pop y
+                pop x
             .ENDIF
-            pop y
-            pop x
             
             add y, 19
             add endY, 19
