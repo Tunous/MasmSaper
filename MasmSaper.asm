@@ -48,14 +48,14 @@ Divide32 proc a:DWORD, b:DWORD
 
     pop ebx
 
-    return eax, edx
+    ret
 Divide32 endp
 
 ConvertToArrayPos proc x:DWORD, y:DWORD
     invoke Multiply32, y, GRID_WIDTH
     add eax, x
 
-    return eax
+    ret
 ConvertToArrayPos endp
 
 ShuffleArray proc arr:DWORD, arraySize:DWORD
@@ -91,21 +91,22 @@ ShuffleArray endp
 
 GetArrayElement proc arr:DWORD, i:DWORD
     push esi
-    
+
+    xor edx, edx
     mov esi, arr
     mov eax, i
     mov eax, [esi + 4 * eax]
 
     pop esi
 
-    return eax
+    ret
 GetArrayElement endp
 
 GetArrayElementXY proc arr:DWORD, x:DWORD, y:DWORD
     invoke ConvertToArrayPos, x, y
     invoke GetArrayElement, arr, eax
 
-    return eax
+    ret
 GetArrayElementXY endp
 
 IncrementIfMine proc mines:DWORD
@@ -334,24 +335,52 @@ WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
         invoke TranslateMessage, addr msg
         invoke DispatchMessage, addr msg
     .ENDW
-    mov eax, msg.wParam
-    ret
+
+    return msg.wParam
 WinMain endp
 
-RevealAt proc x:DWORD, y:DWORD
+RevealAt proc i:DWORD
     push esi
     push ebx
 
     mov esi, OFFSET visibilityArray
     mov ebx, 1
-    invoke ConvertToArrayPos, x, y
+    mov eax, i
     mov [esi + 4 * eax], ebx
 
     pop ebx
     pop esi
-    
     ret
 RevealAt endp
+
+RevealAtXY proc x:DWORD, y:DWORD
+    invoke ConvertToArrayPos, x, y
+    invoke RevealAt, eax
+    
+    ret
+RevealAtXY endp
+
+RevealAllMines proc
+    LOCAL gridSize:DWORD
+
+    push ebx
+
+    invoke Multiply32, GRID_WIDTH, GRID_HEIGHT
+    mov gridSize, eax
+
+    mov ebx, 0
+
+    .WHILE ebx < gridSize
+        invoke GetArrayElement, OFFSET grid, ebx
+        .IF eax == -1
+            invoke RevealAt, ebx
+        .ENDIF
+        inc ebx
+    .ENDW
+
+    pop ebx
+    ret
+RevealAllMines endp
 
 HandleMouse proc lParam:LPARAM, hWnd:HWND
     LOCAL x:DWORD
@@ -387,7 +416,13 @@ HandleMouse proc lParam:LPARAM, hWnd:HWND
     invoke Divide32, eax, 19
     mov y, eax
 
-    invoke RevealAt, x, y
+    invoke GetArrayElementXY, OFFSET grid, x, y
+    .IF eax == -1
+        invoke RevealAllMines
+    .ELSE
+        invoke RevealAtXY, x, y
+    .ENDIF
+
     invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE 
 
     ret
