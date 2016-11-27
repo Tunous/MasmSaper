@@ -4,28 +4,107 @@ option casemap:none
 
 include MasmSaper.inc
 
-.data
-    star DB "*", 0
-    gameOver DB FALSE
-    winTextTitle DB "Wygrana", 0
-    winText DB ":D", 0
-
-.data?
-    mineGenerationArray db 180 dup (?)
-    visibilityArray db 180 dup (?)
-
-.const
-    GRID_WIDTH DWORD 12
-    GRID_HEIGHT DWORD 15
-
 .code
 start:
     invoke GetModuleHandle, 0
     mov hInstance, eax
-    invoke GetCommandLine
-    mov CommandLine, eax
-    invoke WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
+    invoke WinMain, hInstance
     invoke ExitProcess, eax
+
+WinMain proc hInst:HINSTANCE
+    LOCAL wc:WNDCLASSEX
+    LOCAL msg:MSG
+    LOCAL hWnd:HWND
+
+    mov wc.cbSize, SIZEOF WNDCLASSEX
+    mov wc.style, CS_HREDRAW or CS_VREDRAW
+    mov wc.lpfnWndProc, offset WndProc
+    mov wc.cbClsExtra, NULL
+    mov wc.cbWndExtra, NULL
+
+    mov eax, hInst
+    mov wc.hInstance, eax
+
+    mov wc.hbrBackground, COLOR_WINDOW + 1
+    mov wc.lpszMenuName, NULL
+    mov wc.lpszClassName, offset className
+
+    invoke LoadIcon, 0, IDI_APPLICATION
+    mov wc.hIcon, eax
+    mov wc.hIconSm, eax
+
+    invoke LoadCursor, 0, IDC_ARROW
+    mov wc.hCursor, eax
+
+    invoke RegisterClassEx, addr wc
+    
+    invoke CreateWindowEx,
+           0,
+           addr className,
+           addr windowTitle,
+           WS_OVERLAPPED or WS_CAPTION or WS_SYSMENU or WS_MINIMIZEBOX,
+           CW_USEDEFAULT,
+           CW_USEDEFAULT,
+           255,
+           355,
+           0,
+           0,
+           hInst,
+           0
+
+    mov hWnd, eax
+
+    invoke LoadMenu, hInst, 600
+    invoke SetMenu, hWnd, eax
+
+    invoke GenerateGrid
+
+    invoke ShowWindow, hWnd, SW_SHOWNORMAL
+    invoke UpdateWindow, hWnd
+
+    .WHILE TRUE
+        invoke GetMessage, addr msg, 0, 0, 0
+        .BREAK .IF (!eax)
+        invoke TranslateMessage, addr msg
+        invoke DispatchMessage, addr msg
+    .ENDW
+
+    return msg.wParam
+WinMain endp
+
+WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+    LOCAL hDC:DWORD
+    LOCAL ps:PAINTSTRUCT
+    
+    .IF uMsg == WM_DESTROY
+        invoke PostQuitMessage, 0
+
+    .ELSEIF uMsg == WM_COMMAND
+        .IF wParam == 500
+            invoke NewGame, hWnd
+
+        .ELSEIF wParam == 1000
+            invoke PostQuitMessage, 0
+
+        .ELSEIF wParam == 1900
+            invoke MessageBox, hWnd, addr author, addr authorPopupTitle, MB_OK
+        .ENDIF
+
+    .ELSEIF uMsg == WM_PAINT
+        invoke BeginPaint, hWnd, addr ps
+        mov hDC, eax
+        invoke Paint, hWnd, hDC
+        invoke EndPaint, hWnd, addr ps
+
+    .ELSEIF uMsg == WM_LBUTTONDOWN
+        invoke HandleMouse, hWnd, lParam
+
+    .ELSE
+        invoke DefWindowProc, hWnd, uMsg, wParam, lParam
+    .ENDIF
+    
+    ret
+WndProc endp
 
 Multiply32 proc a:DWORD, b:DWORD
     push ebx
@@ -288,67 +367,6 @@ NewGame proc hWnd:HWND
     ret
 NewGame endp
 
-WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
-    LOCAL wc:WNDCLASSEX
-    LOCAL msg:MSG
-    LOCAL hWnd:HWND
-
-    mov wc.cbSize, SIZEOF WNDCLASSEX
-    mov wc.style, CS_HREDRAW or CS_VREDRAW
-    mov wc.lpfnWndProc, offset WndProc
-    mov wc.cbClsExtra, NULL
-    mov wc.cbWndExtra, NULL
-
-    push hInst
-    pop wc.hInstance
-
-    mov wc.hbrBackground, COLOR_WINDOW + 1
-    mov wc.lpszMenuName, NULL
-    mov wc.lpszClassName, offset className
-
-    invoke LoadIcon, 0, IDI_APPLICATION
-    mov wc.hIcon, eax
-    mov wc.hIconSm, eax
-
-    invoke LoadCursor, 0, IDC_ARROW
-    mov wc.hCursor, eax
-
-    invoke RegisterClassEx, addr wc
-    
-    invoke CreateWindowEx,
-           0,
-           addr className,
-           addr windowTitle,
-           WS_OVERLAPPED or WS_CAPTION or WS_SYSMENU or WS_MINIMIZEBOX,
-           CW_USEDEFAULT,
-           CW_USEDEFAULT,
-           255,
-           355,
-           0,
-           0,
-           hInst,
-           0
-
-    mov hWnd, eax
-
-    invoke LoadMenu, hInst, 600
-    invoke SetMenu, hWnd, eax
-
-    invoke GenerateGrid
-
-    invoke ShowWindow, hWnd, SW_SHOWNORMAL
-    invoke UpdateWindow, hWnd
-
-    .WHILE TRUE
-        invoke GetMessage, addr msg, 0, 0, 0
-        .BREAK .IF (!eax)
-        invoke TranslateMessage, addr msg
-        invoke DispatchMessage, addr msg
-    .ENDW
-
-    return msg.wParam
-WinMain endp
-
 RevealAt proc i:DWORD
     push esi
     push ebx
@@ -478,40 +496,6 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM
 
     ret
 HandleMouse endp
-
-WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
-    LOCAL hDC:DWORD
-    LOCAL ps:PAINTSTRUCT
-    
-    .IF uMsg == WM_DESTROY
-        invoke PostQuitMessage, 0
-
-    .ELSEIF uMsg == WM_COMMAND
-        .IF wParam == 500
-            invoke NewGame, hWnd
-
-        .ELSEIF wParam == 1000
-            invoke PostQuitMessage, 0
-
-        .ELSEIF wParam == 1900
-            invoke MessageBox, hWnd, addr author, addr authorPopupTitle, MB_OK
-        .ENDIF
-
-    .ELSEIF uMsg == WM_PAINT
-        invoke BeginPaint, hWnd, addr ps
-        mov hDC, eax
-        invoke Paint, hWnd, hDC
-        invoke EndPaint, hWnd, addr ps
-
-    .ELSEIF uMsg == WM_LBUTTONDOWN
-        invoke HandleMouse, hWnd, lParam
-
-    .ELSE
-        invoke DefWindowProc, hWnd, uMsg, wParam, lParam
-    .ENDIF
-    
-    ret
-WndProc endp
 
 Paint proc hWnd:DWORD, hDC:DWORD
     invoke DrawGrid, hDC
