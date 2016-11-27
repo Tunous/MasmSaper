@@ -1,7 +1,3 @@
-.386
-.model flat, stdcall
-option casemap:none
-
 include MasmSaper.inc
 
 .code
@@ -9,7 +5,7 @@ start:
     invoke GetModuleHandle, 0
     mov hInstance, eax
     invoke WinMain, hInstance
-    invoke ExitProcess, eax
+    exit eax
 
 WinMain proc hInst:HINSTANCE
     LOCAL wc:WNDCLASSEX
@@ -21,10 +17,7 @@ WinMain proc hInst:HINSTANCE
     mov wc.lpfnWndProc, offset WndProc
     mov wc.cbClsExtra, NULL
     mov wc.cbWndExtra, NULL
-
-    mov eax, hInst
-    mov wc.hInstance, eax
-
+    m2m wc.hInstance, hInst
     mov wc.hbrBackground, COLOR_WINDOW + 1
     mov wc.lpszMenuName, NULL
     mov wc.lpszClassName, offset className
@@ -62,12 +55,8 @@ WinMain proc hInst:HINSTANCE
     invoke ShowWindow, hWnd, SW_SHOWNORMAL
     invoke UpdateWindow, hWnd
 
-    .WHILE TRUE
-        invoke GetMessage, addr msg, 0, 0, 0
-        .BREAK .IF (!eax)
-        invoke TranslateMessage, addr msg
-        invoke DispatchMessage, addr msg
-    .ENDW
+    BeginMessageLoop msg
+    EndMessageLoop msg
 
     return msg.wParam
 WinMain endp
