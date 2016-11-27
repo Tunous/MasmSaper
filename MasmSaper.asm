@@ -7,6 +7,8 @@ include MasmSaper.inc
 .data
     star DB "*", 0
     gameOver DB FALSE
+    winTextTitle DB "Wygrana", 0
+    winText DB ":D", 0
 
 .data?
     mineGenerationArray db 180 dup (?)
@@ -364,7 +366,7 @@ RevealAt endp
 RevealAtXY proc x:DWORD, y:DWORD
     invoke ConvertToArrayPos, x, y
     invoke RevealAt, eax
-    
+
     ret
 RevealAtXY endp
 
@@ -389,6 +391,40 @@ RevealAllMines proc
     pop ebx
     ret
 RevealAllMines endp
+
+CheckHasWon proc hWnd:HWND
+    LOCAL gridSize:DWORD
+    LOCAL hasWon:BYTE
+
+    invoke Multiply32, GRID_WIDTH, GRID_HEIGHT
+    mov gridSize, eax    
+    mov hasWon, TRUE
+
+    push ebx
+    mov ebx, 0
+
+    .WHILE ebx < gridSize
+        invoke GetArrayElement, OFFSET visibilityArray, ebx
+        .IF !eax
+            invoke GetArrayElement, OFFSET grid, ebx
+            .IF eax != -1
+                mov hasWon, FALSE
+                .BREAK
+            .ENDIF
+        .ENDIF
+
+        inc ebx
+    .ENDW
+
+    .IF hasWon
+        invoke MessageBox, hWnd, addr winText, addr winTextTitle, MB_OK
+        mov gameOver, TRUE
+        invoke RevealAllMines
+    .ENDIF
+
+    pop ebx
+    ret
+CheckHasWon endp
 
 HandleMouse proc hWnd:HWND, lParam:LPARAM
     LOCAL x:DWORD
@@ -435,6 +471,7 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM
         invoke RevealAllMines
     .ELSE
         invoke RevealAtXY, x, y
+        invoke CheckHasWon, hWnd
     .ENDIF
 
     invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE 
