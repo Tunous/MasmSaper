@@ -6,7 +6,6 @@ include MasmSaper.inc
 
 .data
     star db "*", 0
-    showAll DWORD 0
 
 .data?
     mineGenerationArray db 180 dup (?)
@@ -430,44 +429,36 @@ HandleMouse endp
 
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL hDC:DWORD
-    LOCAL Ps:PAINTSTRUCT
+    LOCAL ps:PAINTSTRUCT
     
     .IF uMsg == WM_DESTROY
         invoke PostQuitMessage, 0
+
     .ELSEIF uMsg == WM_COMMAND
         .IF wParam == 500
             invoke GenerateGrid
             invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE
-        .ELSEIF wParam == 600
-            .IF showAll == 1
-                mov showAll, 0
-            .ELSE
-                mov showAll, 1
-            .ENDIF
-            invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE
+
         .ELSEIF wParam == 1000
             invoke PostQuitMessage, 0
+
         .ELSEIF wParam == 1900
             invoke MessageBox, hWnd, addr author, addr authorPopupTitle, MB_OK
         .ENDIF
-    .ELSEIF uMsg == WM_CREATE
-        ;szText button1, "PRZYCISK"
-        ;invoke PushButton, addr button1, hWnd, 10, 10, 100, 20, 1900
+
     .ELSEIF uMsg == WM_PAINT
-        invoke BeginPaint, hWnd, addr Ps
+        invoke BeginPaint, hWnd, addr ps
         mov hDC, eax
         invoke Paint, hWnd, hDC
-        invoke EndPaint, hWnd, addr Ps
+        invoke EndPaint, hWnd, addr ps
 
     .ELSEIF uMsg == WM_LBUTTONDOWN
         invoke HandleMouse, lParam, hWnd
 
     .ELSE
         invoke DefWindowProc, hWnd, uMsg, wParam, lParam
-        ret
     .ENDIF
     
-    xor eax, eax
     ret
 WndProc endp
 
@@ -519,7 +510,7 @@ DrawGrid proc hDC:DWORD
 
             invoke GetArrayElementXY, OFFSET visibilityArray, i, j
 
-            .IF eax != 0 || showAll == 1
+            .IF eax != 0
                 push x
                 push y
                 add x, 10
