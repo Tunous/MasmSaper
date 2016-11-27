@@ -5,7 +5,8 @@ option casemap:none
 include MasmSaper.inc
 
 .data
-    star db "*", 0
+    star DB "*", 0
+    gameOver DB FALSE
 
 .data?
     mineGenerationArray db 180 dup (?)
@@ -277,6 +278,14 @@ GenerateGrid proc
     ret
 GenerateGrid endp
 
+NewGame proc hWnd:HWND
+    invoke GenerateGrid
+    mov gameOver, FALSE
+    invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE
+
+    ret
+NewGame endp
+
 WinMain proc hInst:HINSTANCE, hPrevInst:HINSTANCE, cmdLine:LPSTR, cmdShow:DWORD
     LOCAL wc:WNDCLASSEX
     LOCAL msg:MSG
@@ -381,11 +390,16 @@ RevealAllMines proc
     ret
 RevealAllMines endp
 
-HandleMouse proc lParam:LPARAM, hWnd:HWND
+HandleMouse proc hWnd:HWND, lParam:LPARAM
     LOCAL x:DWORD
     LOCAL y:DWORD
     LOCAL maxX:DWORD
     LOCAL maxY:DWORD
+
+    .IF gameOver
+        invoke NewGame, hWnd
+        ret
+    .ENDIF
 
     invoke Multiply32, 19, GRID_WIDTH
     mov maxX, eax
@@ -417,6 +431,7 @@ HandleMouse proc lParam:LPARAM, hWnd:HWND
 
     invoke GetArrayElementXY, OFFSET grid, x, y
     .IF eax == -1
+        mov gameOver, TRUE
         invoke RevealAllMines
     .ELSE
         invoke RevealAtXY, x, y
@@ -436,8 +451,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 
     .ELSEIF uMsg == WM_COMMAND
         .IF wParam == 500
-            invoke GenerateGrid
-            invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE
+            invoke NewGame, hWnd
 
         .ELSEIF wParam == 1000
             invoke PostQuitMessage, 0
@@ -453,7 +467,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         invoke EndPaint, hWnd, addr ps
 
     .ELSEIF uMsg == WM_LBUTTONDOWN
-        invoke HandleMouse, lParam, hWnd
+        invoke HandleMouse, hWnd, lParam
 
     .ELSE
         invoke DefWindowProc, hWnd, uMsg, wParam, lParam
