@@ -50,7 +50,8 @@ WinMain proc hInst:HINSTANCE
     invoke LoadMenu, hInst, 600
     invoke SetMenu, hWnd, eax
 
-    invoke GenerateGrid
+    invoke Multiply32, GRID_WIDTH, GRID_HEIGHT
+    mov GRID_SIZE, eax
 
     invoke ShowWindow, hWnd, SW_SHOWNORMAL
     invoke UpdateWindow, hWnd
@@ -144,10 +145,10 @@ ShuffleArray proc arr:DWORD, arraySize:DWORD
 
     .WHILE lArraySize > 0
         invoke nrandom, arraySize   ; Get the random number within "arraySize" range
-        mov ecx, [esi+ebx*4]        ; Get the incremental pointer
-        mov edx, [edi+eax*4]        ; Get the random pointer
-        mov [esi+ebx*4], edx        ; Write random pointer back to incremental location
-        mov [edi+eax*4], ecx        ; Write incremental pointer back to random location
+        mov ecx, [esi + ebx * 4]    ; Get the incremental pointer
+        mov edx, [edi + eax *4 ]    ; Get the random pointer
+        mov [esi + ebx * 4], edx    ; Write random pointer back to incremental location
+        mov [edi + eax * 4], ecx    ; Write incremental pointer back to random location
         add ebx, 1                  ; Increment the original pointer
         sub lArraySize, 1           ; Decrement the loop counter
     .ENDW
@@ -188,9 +189,30 @@ IncrementIfMine proc mines:DWORD
     return mines
 IncrementIfMine endp
 
-GenerateGrid proc
-    LOCAL gridSize:DWORD
+ClearGrid proc
+    push esi
+    push edi
+    push ebx
+    
+    mov esi, OFFSET grid
+    mov edi, OFFSET visibilityArray
+    mov ebx, 0
+
+    .WHILE eax < GRID_SIZE
+        mov [esi + 4 * eax], ebx
+        mov [edi + 4 * eax], ebx
+        inc eax
+    .ENDW
+
+    pop ebx
+    pop edi
+    pop esi
+    ret
+ClearGrid endp
+
+GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
     LOCAL mines:DWORD
+    LOCAL ignorePos:DWORD
 
     push ebx
     push esi
@@ -198,15 +220,14 @@ GenerateGrid proc
     push ecx
     push edx
 
-    ; Calculate size of the grid: width * height
-    invoke Multiply32, GRID_WIDTH, GRID_HEIGHT
-    mov gridSize, eax   
+    invoke ConvertToArrayPos, ignoreX, ignoreY
+    mov ignorePos, eax 
 
     ; Initialize array holding positions for mines
     mov esi, OFFSET mineGenerationArray
     xor ebx, ebx
 
-    .WHILE ebx < gridSize
+    .WHILE ebx < GRID_SIZE
         mov [esi + 4 * ebx], ebx
         inc ebx
     .ENDW
@@ -214,39 +235,31 @@ GenerateGrid proc
     ; Shuffle it to always get random position
     invoke GetTickCount
     invoke nseed, eax
-    invoke ShuffleArray, OFFSET mineGenerationArray, gridSize
-
+    invoke ShuffleArray, OFFSET mineGenerationArray, GRID_SIZE
 
     mov esi, OFFSET grid
     mov edi, OFFSET mineGenerationArray
 
-    xor ebx, ebx
-    mov edx, 0
-
-    ; Clear the grid
-    .WHILE ebx < gridSize
-        mov [esi + 4 * ebx], edx
-        inc ebx
-    .ENDW
+    invoke ClearGrid
 
     xor ebx, ebx
     mov edx, -1
+    mov eax, 30
     
     ; Select fixed amount of randomized positions for mines
-    .WHILE ebx < 30
+    .WHILE ebx < eax
         mov ecx, [edi + 4 * ebx]                    ; Get position from first array
-        mov [esi + 4 * ecx], edx                    ; And place mine at that position in actual array
+        .IF ecx == ignorePos                        ; If this position is ignored then we don't want to place mine here
+            inc eax                                 ; Let's skip it and take different pos
+        .ELSE
+            mov [esi + 4 * ecx], edx                ; And place mine at that position in actual array
+        .ENDIF
         inc ebx
     .ENDW
 
     xor ebx, ebx
 
-    mov edi, OFFSET visibilityArray
-
-    .WHILE ebx < gridSize
-        mov eax, 0
-        mov [edi + 4 * ebx], eax                    ; Reset visiblity array
-        
+    .WHILE ebx < GRID_SIZE
         mov mines, 0                                ; Reset count
         mov ecx, [esi + 4 * ebx]                    ; Get grid element
 
@@ -275,7 +288,7 @@ GenerateGrid proc
                 add ebx, GRID_WIDTH
                 add ebx, GRID_WIDTH
 
-                .IF ebx < gridSize                  ; ...
+                .IF ebx < GRID_SIZE                 ; ...
                     invoke IncrementIfMine, mines   ; .O.
                     mov mines, eax                  ; X..
                 .ENDIF
@@ -302,7 +315,7 @@ GenerateGrid proc
                 add ebx, GRID_WIDTH
                 add ebx, GRID_WIDTH
 
-                .IF ebx < gridSize                  ; ...
+                .IF ebx < GRID_SIZE                 ; ...
                     invoke IncrementIfMine, mines   ; .O.
                     mov mines, eax                  ; ..X
                 .ENDIF
@@ -326,7 +339,7 @@ GenerateGrid proc
             add ebx, GRID_WIDTH
             
             ; Bottom tile
-            .IF ebx < gridSize                      ; ...
+            .IF ebx < GRID_SIZE                     ; ...
                 invoke IncrementIfMine, mines       ; .O.
                 mov mines, eax                      ; .X.
             .ENDIF
@@ -349,8 +362,11 @@ GenerateGrid proc
 GenerateGrid endp
 
 NewGame proc hWnd:HWND
-    invoke GenerateGrid
+    invoke ClearGrid
+
     mov gameOver, FALSE
+    mov isFirstMove, TRUE
+
     invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE
 
     ret
@@ -378,16 +394,11 @@ RevealAtXY proc x:DWORD, y:DWORD
 RevealAtXY endp
 
 RevealAllMines proc
-    LOCAL gridSize:DWORD
-
     push ebx
-
-    invoke Multiply32, GRID_WIDTH, GRID_HEIGHT
-    mov gridSize, eax
 
     mov ebx, 0
 
-    .WHILE ebx < gridSize
+    .WHILE ebx < GRID_SIZE
         invoke GetArrayElement, OFFSET grid, ebx
         .IF eax == -1
             invoke RevealAt, ebx
@@ -400,17 +411,14 @@ RevealAllMines proc
 RevealAllMines endp
 
 CheckHasWon proc hWnd:HWND
-    LOCAL gridSize:DWORD
     LOCAL hasWon:BYTE
-
-    invoke Multiply32, GRID_WIDTH, GRID_HEIGHT
-    mov gridSize, eax    
+ 
     mov hasWon, TRUE
 
     push ebx
     mov ebx, 0
 
-    .WHILE ebx < gridSize
+    .WHILE ebx < GRID_SIZE
         invoke GetArrayElement, OFFSET visibilityArray, ebx
         .IF !eax
             invoke GetArrayElement, OFFSET grid, ebx
@@ -471,6 +479,11 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM
 
     invoke Divide32, eax, 19
     mov y, eax
+
+    .IF isFirstMove
+        invoke GenerateGrid, x, y
+        mov isFirstMove, FALSE
+    .ENDIF
 
     invoke GetArrayElementXY, OFFSET grid, x, y
     .IF eax == -1

@@ -34,12 +34,13 @@ GetArrayElement proto       :DWORD, :DWORD
 GetArrayElementXY proto     :DWORD, :DWORD, :DWORD
 
 IncrementIfMine proto       :DWORD
-GenerateGrid proto
+GenerateGrid proto          :DWORD, :DWORD
 NewGame proto               :HWND
 RevealAt proto              :DWORD
 RevealAtXY proto            :DWORD, :DWORD
 RevealAllMines proto
 CheckHasWon proto           :HWND
+ClearGrid proto
 
 HandleMouse proto           :HWND, :LPARAM
 
@@ -61,9 +62,11 @@ DrawGrid proto              :DWORD
     winText                 DB ":D", 0
     grid                    DD 180 DUP (0)
     visibilityArray         DD 180 DUP (0)
+    isFirstMove             DB TRUE
 
 
 .data?
+    GRID_SIZE               DD ?
     hInstance               HINSTANCE ?
     lpszNumber              DB 2 DUP (?)
     mineGenerationArray     DD 180 DUP (?)
