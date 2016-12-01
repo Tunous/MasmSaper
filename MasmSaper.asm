@@ -378,6 +378,7 @@ NewGame proc hWnd:HWND
     mov gameOver, FALSE
     mov isFirstMove, TRUE
     mov gameTime, 0
+    mov leftMines, 30
 
     invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE
 
@@ -414,8 +415,10 @@ ToggleMarkerAt proc x:DWORD, y:DWORD
     invoke GetArrayElement, esi, ebx
     .IF eax == 0
         m2m [esi + 4 * ebx], 2
+        dec leftMines
     .ELSEIF eax == 2
         m2m [esi + 4 * ebx], 0
+        inc leftMines
     .ENDIF
 
     pop ebx
@@ -546,16 +549,25 @@ StopGame endp
 Paint proc hWnd:DWORD, hDC:DWORD
     invoke DrawGrid, hDC
     invoke DrawTime, hDC
+    invoke DrawMines, hDC
     ret
 Paint endp
 
 DrawTime proc hDC:DWORD
     mov eax, gameTime
-    invoke dwtoa, eax, OFFSET rpszNumber
-    invoke TextOut, hDC, 10, 305, ADDR rpszNumber, SIZEOF rpszNumber - 1
+    invoke dwtoa, eax, OFFSET drawText
+    invoke TextOut, hDC, 10, 305, ADDR drawText, SIZEOF drawText - 1
 
     ret
 DrawTime endp
+
+DrawMines proc hDC:DWORD
+    mov eax, leftMines
+    invoke dwtoa, eax, OFFSET drawText
+    invoke TextOut, hDC, 50, 305, ADDR drawText, SIZEOF drawText - 1
+
+    ret
+DrawMines endp
 
 DrawGrid proc hDC:DWORD
     LOCAL brush:DWORD
@@ -611,8 +623,8 @@ DrawGrid proc hDC:DWORD
                     .IF eax == -1
                         invoke TextOut, hDC, x, y, ADDR star, SIZEOF star - 1
                     .ELSE
-                        invoke dwtoa, eax, OFFSET lpszNumber
-                        invoke TextOut, hDC, x, y, ADDR lpszNumber, SIZEOF lpszNumber - 1
+                        invoke dwtoa, eax, OFFSET countText
+                        invoke TextOut, hDC, x, y, ADDR countText, SIZEOF countText - 1
                     .ENDIF
                 .ELSE
                      invoke TextOut, hDC, x, y, ADDR marker, SIZEOF marker - 1

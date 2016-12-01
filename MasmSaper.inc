@@ -48,6 +48,7 @@ HandleMouse proto           :HWND, :LPARAM, :BYTE
 Paint proto                 :DWORD, :DWORD
 DrawGrid proto              :DWORD
 DrawTime proto              :DWORD
+DrawMines proto             :DWORD
 
 .const
     GRID_WIDTH              DD 12
@@ -68,11 +69,11 @@ DrawTime proto              :DWORD
     visibilityArray         DD 180 DUP (0)
     isFirstMove             DB TRUE
     gameTime                DD 0
-
+    leftMines               DD 30
 
 .data?
     GRID_SIZE               DD ?
     hInstance               HINSTANCE ?
-    lpszNumber              DB 2 DUP (?)
-    rpszNumber              DB 16 DUP (?)
+    drawText                DB 16 DUP (?)
+    countText               DB 2 DUP (?)
     mineGenerationArray     DD 180 DUP (?)
