@@ -39,7 +39,7 @@ WinMain proc hInst:HINSTANCE
            CW_USEDEFAULT,
            CW_USEDEFAULT,
            255,
-           355,
+           375,
            0,
            0,
            hInst,
@@ -61,6 +61,14 @@ WinMain proc hInst:HINSTANCE
 
     return msg.wParam
 WinMain endp
+
+TimeCallback proc hWnd:HWND, uMsg:UINT, pMidEvent:DWORD, dwTime:DWORD
+    inc gameTime
+
+    invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE 
+
+    ret
+TimeCallback endp
 
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL hDC:DWORD
@@ -369,6 +377,7 @@ NewGame proc hWnd:HWND
 
     mov gameOver, FALSE
     mov isFirstMove, TRUE
+    mov gameTime, 0
 
     invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE
 
@@ -454,8 +463,7 @@ CheckHasWon proc hWnd:HWND
 
     .IF hasWon
         invoke MessageBox, hWnd, ADDR winText, ADDR winTextTitle, MB_OK
-        mov gameOver, TRUE
-        invoke RevealAllMines
+        invoke StopGame, hWnd
     .ENDIF
 
     pop ebx
@@ -504,6 +512,7 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
     .IF isLeftClick && isFirstMove
         invoke GenerateGrid, x, y
         mov isFirstMove, FALSE
+        invoke SetTimer, hWnd, ID_TIMER, 1000, OFFSET TimeCallback
     .ENDIF
 
     .IF isLeftClick
@@ -511,8 +520,7 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
         .IF eax != 2
             invoke GetArrayElementXY, OFFSET grid, x, y
             .IF eax == -1
-                mov gameOver, TRUE
-                invoke RevealAllMines
+                invoke StopGame, hWnd
             .ELSE
                 invoke RevealAtXY, x, y
                 invoke CheckHasWon, hWnd
@@ -527,10 +535,27 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
     ret
 HandleMouse endp
 
+StopGame proc hWnd:HWND
+    invoke KillTimer, hWnd, ID_TIMER
+    mov gameOver, TRUE
+    invoke RevealAllMines
+
+    ret
+StopGame endp
+
 Paint proc hWnd:DWORD, hDC:DWORD
     invoke DrawGrid, hDC
+    invoke DrawTime, hDC
     ret
 Paint endp
+
+DrawTime proc hDC:DWORD
+    mov eax, gameTime
+    invoke dwtoa, eax, OFFSET rpszNumber
+    invoke TextOut, hDC, 10, 305, ADDR rpszNumber, SIZEOF rpszNumber - 1
+
+    ret
+DrawTime endp
 
 DrawGrid proc hDC:DWORD
     LOCAL brush:DWORD

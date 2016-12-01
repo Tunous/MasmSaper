@@ -36,6 +36,7 @@ GetArrayElementXY proto     :DWORD, :DWORD, :DWORD
 IncrementIfMine proto       :DWORD
 GenerateGrid proto          :DWORD, :DWORD
 NewGame proto               :HWND
+StopGame proto              :HWND
 RevealAt proto              :DWORD
 RevealAtXY proto            :DWORD, :DWORD
 RevealAllMines proto
@@ -46,10 +47,12 @@ HandleMouse proto           :HWND, :LPARAM, :BYTE
 
 Paint proto                 :DWORD, :DWORD
 DrawGrid proto              :DWORD
+DrawTime proto              :DWORD
 
 .const
     GRID_WIDTH              DD 12
     GRID_HEIGHT             DD 15
+    ID_TIMER                DD 1001
 
 .data
     windowTitle             DB "Saper", 0
@@ -64,10 +67,12 @@ DrawGrid proto              :DWORD
     grid                    DD 180 DUP (0)
     visibilityArray         DD 180 DUP (0)
     isFirstMove             DB TRUE
+    gameTime                DD 0
 
 
 .data?
     GRID_SIZE               DD ?
     hInstance               HINSTANCE ?
     lpszNumber              DB 2 DUP (?)
+    rpszNumber              DB 16 DUP (?)
     mineGenerationArray     DD 180 DUP (?)
