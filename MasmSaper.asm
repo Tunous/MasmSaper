@@ -554,17 +554,27 @@ Paint proc hWnd:DWORD, hDC:DWORD
 Paint endp
 
 DrawTime proc hDC:DWORD
-    mov eax, gameTime
-    invoke dwtoa, eax, OFFSET drawText
-    invoke TextOut, hDC, 10, 305, ADDR drawText, SIZEOF drawText - 1
+    LOCAL minutes:DWORD
+    LOCAL seconds:DWORD
+    
+    invoke Divide, gameTime, 60
+    mov minutes, eax
+    mov seconds, edx
+    
+    invoke dwtoa, minutes, OFFSET drawText
+    invoke TextOut, hDC, 30, 305, ADDR drawText, SIZEOF drawText - 1
+
+    invoke TextOut, hDC, 50, 305, ADDR timeDivider, SIZEOF timeDivider
+
+    invoke dwtoa, seconds, OFFSET drawText
+    invoke TextOut, hDC, 60, 305, ADDR drawText, SIZEOF drawText - 1
 
     ret
 DrawTime endp
 
 DrawMines proc hDC:DWORD
-    mov eax, leftMines
-    invoke dwtoa, eax, OFFSET drawText
-    invoke TextOut, hDC, 50, 305, ADDR drawText, SIZEOF drawText - 1
+    invoke dwtoa, leftMines, OFFSET drawText
+    invoke TextOut, hDC, 150, 305, ADDR drawText, SIZEOF drawText - 1
 
     ret
 DrawMines endp

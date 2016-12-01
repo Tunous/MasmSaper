@@ -62,6 +62,7 @@ DrawMines proto             :DWORD
     className               DB "WinClass", 0
     star                    DB "*", 0
     marker                  DB "!", 0
+    timeDivider             DB ":", 0
     gameOver                DB FALSE
     winTextTitle            DB "Wygrana", 0
     winText                 DB ":D", 0
@@ -74,6 +75,6 @@ DrawMines proto             :DWORD
 .data?
     GRID_SIZE               DD ?
     hInstance               HINSTANCE ?
-    drawText                DB 16 DUP (?)
+    drawText                DB 4 DUP (?)
     countText               DB 2 DUP (?)
     mineGenerationArray     DD 180 DUP (?)
