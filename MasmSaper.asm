@@ -573,8 +573,9 @@ DrawTime proc hDC:DWORD
 DrawTime endp
 
 DrawMines proc hDC:DWORD
+    invoke TextOut, hDC, 210, 305, ADDR star, SIZEOF star - 1
     invoke dwtoa, leftMines, OFFSET drawText
-    invoke TextOut, hDC, 150, 305, ADDR drawText, SIZEOF drawText - 1
+    invoke TextOut, hDC, 220, 305, ADDR drawText, SIZEOF drawText - 1
 
     ret
 DrawMines endp
