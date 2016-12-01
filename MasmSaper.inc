@@ -42,7 +42,7 @@ RevealAllMines proto
 CheckHasWon proto           :HWND
 ClearGrid proto
 
-HandleMouse proto           :HWND, :LPARAM
+HandleMouse proto           :HWND, :LPARAM, :BYTE
 
 Paint proto                 :DWORD, :DWORD
 DrawGrid proto              :DWORD
@@ -57,6 +57,7 @@ DrawGrid proto              :DWORD
     author                  DB "Lukasz Rutkowski", 0
     className               DB "WinClass", 0
     star                    DB "*", 0
+    marker                  DB "!", 0
     gameOver                DB FALSE
     winTextTitle            DB "Wygrana", 0
     winText                 DB ":D", 0

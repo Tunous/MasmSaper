@@ -87,7 +87,10 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         invoke EndPaint, hWnd, ADDR ps
 
     .ELSEIF uMsg == WM_LBUTTONDOWN
-        invoke HandleMouse, hWnd, lParam
+        invoke HandleMouse, hWnd, lParam, TRUE
+
+    .ELSEIF uMsg == WM_RBUTTONDOWN
+        invoke HandleMouse, hWnd, lParam, FALSE
 
     .ELSE
         invoke DefWindowProc, hWnd, uMsg, wParam, lParam
@@ -374,14 +377,11 @@ NewGame endp
 
 RevealAt proc i:DWORD
     push esi
-    push ebx
 
     mov esi, OFFSET visibilityArray
-    mov ebx, 1
     mov eax, i
-    mov [esi + 4 * eax], ebx
+    m2m [esi + 4 * eax], 1
 
-    pop ebx
     pop esi
     ret
 RevealAt endp
@@ -392,6 +392,27 @@ RevealAtXY proc x:DWORD, y:DWORD
 
     ret
 RevealAtXY endp
+
+ToggleMarkerAt proc x:DWORD, y:DWORD
+    push esi
+    push ebx
+
+    mov esi, OFFSET visibilityArray
+
+    invoke ConvertToArrayPos, x, y
+    mov ebx, eax
+
+    invoke GetArrayElement, esi, ebx
+    .IF eax == 0
+        m2m [esi + 4 * ebx], 2
+    .ELSEIF eax == 2
+        m2m [esi + 4 * ebx], 0
+    .ENDIF
+
+    pop ebx
+    pop esi
+    ret
+ToggleMarkerAt endp
 
 RevealAllMines proc
     push ebx
@@ -441,7 +462,7 @@ CheckHasWon proc hWnd:HWND
     ret
 CheckHasWon endp
 
-HandleMouse proc hWnd:HWND, lParam:LPARAM
+HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
     LOCAL x:DWORD
     LOCAL y:DWORD
     LOCAL maxX:DWORD
@@ -480,18 +501,25 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM
     invoke Divide, eax, 19
     mov y, eax
 
-    .IF isFirstMove
+    .IF isLeftClick && isFirstMove
         invoke GenerateGrid, x, y
         mov isFirstMove, FALSE
     .ENDIF
 
-    invoke GetArrayElementXY, OFFSET grid, x, y
-    .IF eax == -1
-        mov gameOver, TRUE
-        invoke RevealAllMines
+    .IF isLeftClick
+        invoke GetArrayElementXY, OFFSET visibilityArray, x, y
+        .IF eax != 2
+            invoke GetArrayElementXY, OFFSET grid, x, y
+            .IF eax == -1
+                mov gameOver, TRUE
+                invoke RevealAllMines
+            .ELSE
+                invoke RevealAtXY, x, y
+                invoke CheckHasWon, hWnd
+            .ENDIF
+        .ENDIF
     .ELSE
-        invoke RevealAtXY, x, y
-        invoke CheckHasWon, hWnd
+        invoke ToggleMarkerAt, x, y
     .ENDIF
 
     invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE 
@@ -552,14 +580,19 @@ DrawGrid proc hDC:DWORD
                 push y
                 add x, 10
                 add y, 2
-    
-                invoke GetArrayElementXY, OFFSET grid, i, j
-                .IF eax == -1
-                    invoke TextOut, hDC, x, y, ADDR star, SIZEOF star - 1
+
+                .IF eax == 1
+                    invoke GetArrayElementXY, OFFSET grid, i, j
+                    .IF eax == -1
+                        invoke TextOut, hDC, x, y, ADDR star, SIZEOF star - 1
+                    .ELSE
+                        invoke dwtoa, eax, OFFSET lpszNumber
+                        invoke TextOut, hDC, x, y, ADDR lpszNumber, SIZEOF lpszNumber - 1
+                    .ENDIF
                 .ELSE
-                    invoke dwtoa, eax, OFFSET lpszNumber
-                    invoke TextOut, hDC, x, y, ADDR lpszNumber, SIZEOF lpszNumber - 1
+                     invoke TextOut, hDC, x, y, ADDR marker, SIZEOF marker - 1
                 .ENDIF
+
                 pop y
                 pop x
             .ENDIF
