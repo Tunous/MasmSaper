@@ -25,8 +25,8 @@ includelib \masm32\lib\kernel32.lib
 WinMain proto               :HINSTANCE
 WndProc proto               :HWND, :UINT, :WPARAM, :LPARAM
 
-Multiply32 proto            :DWORD, :DWORD
-Divide32 proto              :DWORD, :DWORD
+Multiply proto              :DWORD, :DWORD
+Divide proto                :DWORD, :DWORD
 
 ConvertToArrayPos proto     :DWORD, :DWORD
 ShuffleArray proto          :DWORD, :DWORD

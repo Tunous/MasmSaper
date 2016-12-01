@@ -50,7 +50,7 @@ WinMain proc hInst:HINSTANCE
     invoke LoadMenu, hInst, 600
     invoke SetMenu, hWnd, eax
 
-    invoke Multiply32, GRID_WIDTH, GRID_HEIGHT
+    invoke Multiply, GRID_WIDTH, GRID_HEIGHT
     mov GRID_SIZE, eax
 
     invoke ShowWindow, hWnd, SW_SHOWNORMAL
@@ -96,7 +96,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     ret
 WndProc endp
 
-Multiply32 proc a:DWORD, b:DWORD
+Multiply proc a:DWORD, b:DWORD
     push ebx
 
     xor edx, edx
@@ -107,9 +107,9 @@ Multiply32 proc a:DWORD, b:DWORD
     pop ebx
 
     return eax
-Multiply32 endp
+Multiply endp
 
-Divide32 proc a:DWORD, b:DWORD
+Divide proc a:DWORD, b:DWORD
     push ebx
 
     xor edx, edx
@@ -120,10 +120,10 @@ Divide32 proc a:DWORD, b:DWORD
     pop ebx
 
     ret
-Divide32 endp
+Divide endp
 
 ConvertToArrayPos proc x:DWORD, y:DWORD
-    invoke Multiply32, y, GRID_WIDTH
+    invoke Multiply, y, GRID_WIDTH
     add eax, x
 
     ret
@@ -266,7 +266,7 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
         .IF ecx != -1                               ; Skip mines
             push ebx                                ; Store current position
 
-            invoke Divide32, ebx, GRID_WIDTH
+            invoke Divide, ebx, GRID_WIDTH
 
             pop ebx
             push ebx
@@ -452,10 +452,10 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM
         ret
     .ENDIF
 
-    invoke Multiply32, 19, GRID_WIDTH
+    invoke Multiply, 19, GRID_WIDTH
     mov maxX, eax
 
-    invoke Multiply32, 19, GRID_HEIGHT
+    invoke Multiply, 19, GRID_HEIGHT
     mov maxY, eax
 
     mov eax, lParam
@@ -466,7 +466,7 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM
         ret
     .ENDIF
 
-    invoke Divide32, eax, 19
+    invoke Divide, eax, 19
     mov x, eax
     
     mov eax, lParam
@@ -477,7 +477,7 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM
         ret
     .ENDIF
 
-    invoke Divide32, eax, 19
+    invoke Divide, eax, 19
     mov y, eax
 
     .IF isFirstMove
