@@ -404,6 +404,10 @@ RevealAtXY proc x:DWORD, y:DWORD
 RevealAtXY endp
 
 ToggleMarkerAt proc x:DWORD, y:DWORD
+    .IF isFirstMove
+        ret
+    .ENDIF
+
     push esi
     push ebx
 
@@ -414,8 +418,10 @@ ToggleMarkerAt proc x:DWORD, y:DWORD
 
     invoke GetArrayElement, esi, ebx
     .IF eax == 0
-        m2m [esi + 4 * ebx], 2
-        dec leftMines
+        .IF leftMines > 0
+            m2m [esi + 4 * ebx], 2
+            dec leftMines
+        .ENDIF
     .ELSEIF eax == 2
         m2m [esi + 4 * ebx], 0
         inc leftMines
