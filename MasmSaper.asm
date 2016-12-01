@@ -14,13 +14,13 @@ WinMain proc hInst:HINSTANCE
 
     mov wc.cbSize, SIZEOF WNDCLASSEX
     mov wc.style, CS_HREDRAW or CS_VREDRAW
-    mov wc.lpfnWndProc, offset WndProc
+    mov wc.lpfnWndProc, OFFSET WndProc
     mov wc.cbClsExtra, NULL
     mov wc.cbWndExtra, NULL
     m2m wc.hInstance, hInst
     mov wc.hbrBackground, COLOR_WINDOW + 1
     mov wc.lpszMenuName, NULL
-    mov wc.lpszClassName, offset className
+    mov wc.lpszClassName, OFFSET className
 
     invoke LoadIcon, 0, IDI_APPLICATION
     mov wc.hIcon, eax
@@ -33,8 +33,8 @@ WinMain proc hInst:HINSTANCE
     
     invoke CreateWindowEx,
            0,
-           addr className,
-           addr windowTitle,
+           ADDR className,
+           ADDR windowTitle,
            WS_OVERLAPPED or WS_CAPTION or WS_SYSMENU or WS_MINIMIZEBOX,
            CW_USEDEFAULT,
            CW_USEDEFAULT,
@@ -77,14 +77,14 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
             invoke PostQuitMessage, 0
 
         .ELSEIF wParam == 1900
-            invoke MessageBox, hWnd, addr author, addr authorPopupTitle, MB_OK
+            invoke MessageBox, hWnd, ADDR author, ADDR authorPopupTitle, MB_OK
         .ENDIF
 
     .ELSEIF uMsg == WM_PAINT
-        invoke BeginPaint, hWnd, addr ps
+        invoke BeginPaint, hWnd, ADDR ps
         mov hDC, eax
         invoke Paint, hWnd, hDC
-        invoke EndPaint, hWnd, addr ps
+        invoke EndPaint, hWnd, ADDR ps
 
     .ELSEIF uMsg == WM_LBUTTONDOWN
         invoke HandleMouse, hWnd, lParam
@@ -432,7 +432,7 @@ CheckHasWon proc hWnd:HWND
     .ENDW
 
     .IF hasWon
-        invoke MessageBox, hWnd, addr winText, addr winTextTitle, MB_OK
+        invoke MessageBox, hWnd, ADDR winText, ADDR winTextTitle, MB_OK
         mov gameOver, TRUE
         invoke RevealAllMines
     .ENDIF
@@ -555,10 +555,10 @@ DrawGrid proc hDC:DWORD
     
                 invoke GetArrayElementXY, OFFSET grid, i, j
                 .IF eax == -1
-                    invoke TextOut, hDC, x, y, addr star, sizeof star - 1
+                    invoke TextOut, hDC, x, y, ADDR star, SIZEOF star - 1
                 .ELSE
                     invoke dwtoa, eax, OFFSET lpszNumber
-                    invoke TextOut, hDC, x, y, addr lpszNumber, sizeof lpszNumber - 1
+                    invoke TextOut, hDC, x, y, ADDR lpszNumber, SIZEOF lpszNumber - 1
                 .ENDIF
                 pop y
                 pop x
