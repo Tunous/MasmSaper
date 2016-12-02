@@ -583,8 +583,8 @@ CheckHasWon proc hWnd:HWND
     .ENDW
 
     .IF hasWon
-        invoke MessageBox, hWnd, ADDR winText, ADDR winTextTitle, MB_OK
         invoke StopGame, hWnd
+        invoke MessageBox, hWnd, ADDR winText, ADDR winTextTitle, MB_OK
     .ENDIF
 
     pop ebx
