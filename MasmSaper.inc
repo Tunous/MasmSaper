@@ -43,6 +43,9 @@ RevealAllMines proto
 CheckHasWon proto           :HWND
 ClearGrid proto
 
+ContinueRevealing proto :DWORD
+RevealArea proto :DWORD, :DWORD
+
 HandleMouse proto           :HWND, :LPARAM, :BYTE
 
 Paint proto                 :DWORD, :DWORD
@@ -68,6 +71,7 @@ DrawMines proto             :DWORD
     winText                 DB ":D", 0
     grid                    DD 180 DUP (0)
     visibilityArray         DD 180 DUP (0)
+    viewedTiles             DD 180 DUP (0)
     isFirstMove             DB TRUE
     gameTime                DD 0
     leftMines               DD 30

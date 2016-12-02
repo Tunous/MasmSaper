@@ -70,6 +70,118 @@ TimeCallback proc hWnd:HWND, uMsg:UINT, pMidEvent:DWORD, dwTime:DWORD
     ret
 TimeCallback endp
 
+RevealArea proc x:DWORD, y:DWORD
+    LOCAL hasTilesToProcess:BYTE
+
+    mov hasTilesToProcess, TRUE
+    
+    mov esi, OFFSET viewedTiles
+    mov eax, 0
+    .WHILE eax < GRID_SIZE
+        m2m [esi + 4 * eax], 0
+        inc eax
+    .ENDW
+
+    invoke ConvertToArrayPos, x, y
+    invoke ContinueRevealing, eax
+
+    ret
+RevealArea endp
+
+ContinueRevealing proc pos:DWORD
+    LOCAL remainder:DWORD
+    
+    invoke GetArrayElement, OFFSET viewedTiles, pos
+    .IF eax == 1
+        ret
+    .ENDIF
+
+    push ebx
+
+    push esi
+
+    mov esi, OFFSET viewedTiles
+
+    mov ebx, pos
+    m2m [esi + 4 * ebx], 1
+
+    invoke RevealAt, pos
+
+    pop esi
+
+    ; Stop revealing if we are no longer on empty area 
+    invoke GetArrayElement, OFFSET grid, pos 
+    .IF eax != 0
+        pop ebx
+        ret 
+    .ENDIF 
+ 
+    invoke Divide, ebx, GRID_WIDTH
+    mov remainder, edx
+ 
+    mov ebx, pos 
+ 
+    ; Left side 
+    .IF remainder > 0 
+        sub ebx, 1 
+        invoke ContinueRevealing, ebx 
+         
+        .IF ebx >= GRID_WIDTH
+            sub ebx, GRID_WIDTH
+            invoke ContinueRevealing, ebx
+            add ebx, GRID_WIDTH
+        .ENDIF 
+  
+        add ebx, GRID_WIDTH 
+ 
+        .IF ebx < GRID_SIZE 
+            invoke ContinueRevealing, ebx 
+        .ENDIF 
+    .ENDIF 
+ 
+    mov ebx, pos 
+ 
+    mov eax, GRID_WIDTH 
+    dec eax 
+ 
+    ; Right side 
+    .IF remainder < eax
+        add ebx, 1 
+        invoke ContinueRevealing, ebx
+ 
+        .IF ebx >= GRID_WIDTH
+            sub ebx, GRID_WIDTH
+            invoke ContinueRevealing, ebx
+            add ebx, GRID_WIDTH
+        .ENDIF 
+ 
+        add ebx, GRID_WIDTH 
+ 
+        .IF ebx < GRID_SIZE 
+            invoke ContinueRevealing, ebx
+        .ENDIF 
+    .ENDIF 
+ 
+    mov ebx, pos 
+ 
+    ; Top tile 
+    .IF ebx >= GRID_WIDTH 
+        sub ebx, GRID_WIDTH 
+        invoke ContinueRevealing, ebx 
+    .ENDIF 
+ 
+    mov ebx, pos
+    add ebx, GRID_WIDTH 
+     
+    ; Bottom tile 
+    .IF ebx < GRID_SIZE 
+        invoke ContinueRevealing, ebx 
+    .ENDIF 
+ 
+    pop ebx
+    ret
+ContinueRevealing endp
+
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL hDC:DWORD
     LOCAL ps:PAINTSTRUCT
@@ -290,13 +402,13 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
                 invoke IncrementIfMine, mines       ; XO.
                 mov mines, eax                      ; ...
                 
-                sub ebx, GRID_WIDTH
-                .IF ebx >= 0                        ; X..
+                .IF ebx >= GRID_WIDTH
+                    sub ebx, GRID_WIDTH             ; X..
                     invoke IncrementIfMine, mines   ; .O.
                     mov mines, eax                  ; ...
+                    add ebx, GRID_WIDTH
                 .ENDIF
 
-                add ebx, GRID_WIDTH
                 add ebx, GRID_WIDTH
 
                 .IF ebx < GRID_SIZE                 ; ...
@@ -317,13 +429,13 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
                 invoke IncrementIfMine, mines       ; .OX
                 mov mines, eax                      ; ...
 
-                sub ebx, GRID_WIDTH
-                .IF ebx >= 0                        ; ..X
+                .IF ebx >= GRID_WIDTH
+                    sub ebx, GRID_WIDTH             ; ..X
                     invoke IncrementIfMine, mines   ; .O.
                     mov mines, eax                  ; ...
+                    add ebx, GRID_WIDTH
                 .ENDIF
 
-                add ebx, GRID_WIDTH
                 add ebx, GRID_WIDTH
 
                 .IF ebx < GRID_SIZE                 ; ...
@@ -531,7 +643,11 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
             .IF eax == -1
                 invoke StopGame, hWnd
             .ELSE
-                invoke RevealAtXY, x, y
+                .IF eax == 0
+                    invoke RevealArea, x, y
+                .ELSE
+                    invoke RevealAtXY, x, y
+                .ENDIF
                 invoke CheckHasWon, hWnd
             .ENDIF
         .ENDIF
