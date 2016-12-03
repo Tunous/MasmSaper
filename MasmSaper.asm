@@ -38,8 +38,8 @@ WinMain proc hInst:HINSTANCE
            WS_OVERLAPPED or WS_CAPTION or WS_SYSMENU or WS_MINIMIZEBOX,
            CW_USEDEFAULT,
            CW_USEDEFAULT,
-           270,
-           385,
+           255,
+           375,
            0,
            0,
            hInst,
@@ -708,20 +708,20 @@ DrawTime proc hDC:HDC
     mov seconds, edx
     
     invoke dwtoa, minutes, OFFSET drawText
-    invoke TextOut, hDC, 30, 315, ADDR drawText, SIZEOF drawText - 1
+    invoke TextOut, hDC, 30, 305, ADDR drawText, SIZEOF drawText - 1
 
-    invoke TextOut, hDC, 50, 315, ADDR timeDivider, SIZEOF timeDivider
+    invoke TextOut, hDC, 50, 305, ADDR timeDivider, SIZEOF timeDivider
 
     invoke dwtoa, seconds, OFFSET drawText
-    invoke TextOut, hDC, 60, 315, ADDR drawText, SIZEOF drawText - 1
+    invoke TextOut, hDC, 60, 305, ADDR drawText, SIZEOF drawText - 1
 
     ret
 DrawTime endp
 
 DrawMines proc hDC:HDC
-    invoke TextOut, hDC, 210, 315, ADDR star, SIZEOF star - 1
+    invoke TextOut, hDC, 210, 305, ADDR star, SIZEOF star - 1
     invoke dwtoa, leftMines, OFFSET drawText
-    invoke TextOut, hDC, 220, 315, ADDR drawText, SIZEOF drawText - 1
+    invoke TextOut, hDC, 220, 305, ADDR drawText, SIZEOF drawText - 1
 
     ret
 DrawMines endp
