@@ -749,8 +749,6 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
     LOCAL j:DWORD
     LOCAL x:DWORD
     LOCAL y:DWORD
-    LOCAL endX:DWORD
-    LOCAL endY:DWORD
     LOCAL originalAlign:DWORD
     LOCAL originalBkMode:DWORD
     LOCAL currentCount:DWORD
@@ -780,55 +778,79 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
     
     mov i, 0
     mov x, 11
-    mov endX, 30
 
     .WHILE i < 12
         mov j, 0
         mov y, 11
-        mov endY, 30
         
         .WHILE j < 15
             invoke GetArrayElementXY, OFFSET visibilityArray, i, j
 
-            .IF eax != 0
-                .IF eax == 1
-                    invoke GetArrayElementXY, OFFSET grid, i, j
-                    mov currentCount, eax
-                    .IF eax == -1
-                        invoke DrawBitmap, hDC, hMemDC, mineBitmap, x, y
-                    .ELSE
-                        invoke dwtoa, eax, OFFSET countText
-                        invoke DrawBitmap, hDC, hMemDC, bgBitmap, x, y
+            .IF eax == 1
+                invoke GetArrayElementXY, OFFSET grid, i, j
+                mov currentCount, eax
 
-                        .IF currentCount > 0
-                            push x
-                            push y
-                            add x, 10
-                            add y, 1
+                .IF currentCount == -1
+                    ; Draw mine
+                    invoke DrawBitmap, hDC, hMemDC, mineBitmap, x, y
 
-
-                            invoke TextOut, hDC, x, y, ADDR countText, SIZEOF countText - 1
-
-                            pop y
-                            pop x
-                        .ENDIF
-                    .ENDIF
                 .ELSE
-                    invoke DrawBitmap, hDC, hMemDC, markerBitmap, x, y
+                    ; Draw background
+                    invoke dwtoa, eax, OFFSET countText
+                    invoke DrawBitmap, hDC, hMemDC, bgBitmap, x, y
+
+                    .IF currentCount > 0
+                        ; Draw number
+                        add x, 10
+                        add y, 1
+
+                        .IF currentCount == 1
+                            mov eax, 16711757
+                        .ELSEIF currentCount == 2
+                            mov eax, 34641
+                        .ELSEIF currentCount == 3
+                            mov eax, 8615580
+                        .ELSEIF currentCount == 4
+                            mov eax, 1911635
+                        .ELSEIF currentCount == 5
+                            mov eax, 11227702
+                        .ELSEIF currentCount == 6
+                            mov eax, 8615580
+                        .ELSEIF currentCount == 7
+                            mov eax, 1911635
+                        .ELSE
+                            mov eax, 6248271
+                        .ENDIF
+
+                        invoke SetTextColor, hDC, eax
+                        push eax
+
+                        invoke TextOut, hDC, x, y, ADDR countText, SIZEOF countText - 1
+
+                        pop eax
+                        invoke SetTextColor, hDC, eax
+
+                        sub x, 10
+                        sub y, 1
+                    .ENDIF
                 .ENDIF
+
+            .ELSEIF eax == 2
+                ; Draw marker
+                invoke DrawBitmap, hDC, hMemDC, markerBitmap, x, y
+
             .ELSE
+                ; Draw empty tile
                 invoke DrawBitmap, hDC, hMemDC, tileBitmap, x, y
             .ENDIF
 
             mov eax, TILE_SIZE
             add y, eax
-            add endY, eax
             inc j
         .ENDW
 
         mov eax, TILE_SIZE
         add x, eax
-        add endX, eax
         inc i
     .ENDW
 
