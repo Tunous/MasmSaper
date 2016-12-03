@@ -62,126 +62,6 @@ WinMain proc hInst:HINSTANCE
     return msg.wParam
 WinMain endp
 
-TimeCallback proc hWnd:HWND, uMsg:UINT, pMidEvent:DWORD, dwTime:DWORD
-    inc gameTime
-
-    invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE 
-
-    ret
-TimeCallback endp
-
-RevealArea proc x:DWORD, y:DWORD
-    LOCAL hasTilesToProcess:BYTE
-
-    mov hasTilesToProcess, TRUE
-    
-    mov esi, OFFSET viewedTiles
-    mov eax, 0
-    .WHILE eax < GRID_SIZE
-        m2m [esi + 4 * eax], 0
-        inc eax
-    .ENDW
-
-    invoke ConvertToArrayPos, x, y
-    invoke ContinueRevealing, eax
-
-    ret
-RevealArea endp
-
-ContinueRevealing proc pos:DWORD
-    LOCAL remainder:DWORD
-    
-    invoke GetArrayElement, OFFSET viewedTiles, pos
-    .IF eax == 1
-        ret
-    .ENDIF
-
-    push ebx
-
-    push esi
-
-    mov esi, OFFSET viewedTiles
-
-    mov ebx, pos
-    m2m [esi + 4 * ebx], 1
-
-    invoke RevealAt, pos
-
-    pop esi
-
-    ; Stop revealing if we are no longer on empty area 
-    invoke GetArrayElement, OFFSET grid, pos 
-    .IF eax != 0
-        pop ebx
-        ret 
-    .ENDIF 
- 
-    invoke Divide, ebx, GRID_WIDTH
-    mov remainder, edx
- 
-    mov ebx, pos 
- 
-    ; Left side 
-    .IF remainder > 0 
-        sub ebx, 1 
-        invoke ContinueRevealing, ebx 
-         
-        .IF ebx >= GRID_WIDTH
-            sub ebx, GRID_WIDTH
-            invoke ContinueRevealing, ebx
-            add ebx, GRID_WIDTH
-        .ENDIF 
-  
-        add ebx, GRID_WIDTH 
- 
-        .IF ebx < GRID_SIZE 
-            invoke ContinueRevealing, ebx 
-        .ENDIF 
-    .ENDIF 
- 
-    mov ebx, pos 
- 
-    mov eax, GRID_WIDTH 
-    dec eax 
- 
-    ; Right side 
-    .IF remainder < eax
-        add ebx, 1 
-        invoke ContinueRevealing, ebx
- 
-        .IF ebx >= GRID_WIDTH
-            sub ebx, GRID_WIDTH
-            invoke ContinueRevealing, ebx
-            add ebx, GRID_WIDTH
-        .ENDIF 
- 
-        add ebx, GRID_WIDTH 
- 
-        .IF ebx < GRID_SIZE 
-            invoke ContinueRevealing, ebx
-        .ENDIF 
-    .ENDIF 
- 
-    mov ebx, pos 
- 
-    ; Top tile 
-    .IF ebx >= GRID_WIDTH 
-        sub ebx, GRID_WIDTH 
-        invoke ContinueRevealing, ebx 
-    .ENDIF 
- 
-    mov ebx, pos
-    add ebx, GRID_WIDTH 
-     
-    ; Bottom tile 
-    .IF ebx < GRID_SIZE 
-        invoke ContinueRevealing, ebx 
-    .ENDIF 
- 
-    pop ebx
-    ret
-ContinueRevealing endp
-
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL hDC:DWORD
     LOCAL ps:PAINTSTRUCT
@@ -235,6 +115,10 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     
     ret
 WndProc endp
+
+; ******************************************************************************
+; Utility procedures
+; ******************************************************************************
 
 Multiply proc a:DWORD, b:DWORD
     push ebx
@@ -320,14 +204,9 @@ GetArrayElementXY proc arr:DWORD, x:DWORD, y:DWORD
     ret
 GetArrayElementXY endp
 
-IncrementIfMine proc mines:DWORD
-    mov ecx, [esi + 4 * ebx]
-    .IF ecx == -1
-        inc mines
-    .ENDIF
-
-    return mines
-IncrementIfMine endp
+; ******************************************************************************
+; Grid generation
+; ******************************************************************************
 
 ClearGrid proc
     push esi
@@ -501,6 +380,19 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
     ret
 GenerateGrid endp
 
+IncrementIfMine proc mines:DWORD
+    mov ecx, [esi + 4 * ebx]
+    .IF ecx == -1
+        inc mines
+    .ENDIF
+
+    return mines
+IncrementIfMine endp
+
+; ******************************************************************************
+; Game round management
+; ******************************************************************************
+
 NewGame proc hWnd:HWND
     invoke ClearGrid
 
@@ -514,69 +406,13 @@ NewGame proc hWnd:HWND
     ret
 NewGame endp
 
-RevealAt proc i:DWORD
-    push esi
-
-    mov esi, OFFSET visibilityArray
-    mov eax, i
-    m2m [esi + 4 * eax], 1
-
-    pop esi
-    ret
-RevealAt endp
-
-RevealAtXY proc x:DWORD, y:DWORD
-    invoke ConvertToArrayPos, x, y
-    invoke RevealAt, eax
+StopGame proc hWnd:HWND
+    invoke KillTimer, hWnd, ID_TIMER
+    mov gameOver, TRUE
+    invoke RevealAllMines
 
     ret
-RevealAtXY endp
-
-ToggleMarkerAt proc x:DWORD, y:DWORD
-    .IF isFirstMove
-        ret
-    .ENDIF
-
-    push esi
-    push ebx
-
-    mov esi, OFFSET visibilityArray
-
-    invoke ConvertToArrayPos, x, y
-    mov ebx, eax
-
-    invoke GetArrayElement, esi, ebx
-    .IF eax == 0
-        .IF leftMines > 0
-            m2m [esi + 4 * ebx], 2
-            dec leftMines
-        .ENDIF
-    .ELSEIF eax == 2
-        m2m [esi + 4 * ebx], 0
-        inc leftMines
-    .ENDIF
-
-    pop ebx
-    pop esi
-    ret
-ToggleMarkerAt endp
-
-RevealAllMines proc
-    push ebx
-
-    mov ebx, 0
-
-    .WHILE ebx < GRID_SIZE
-        invoke GetArrayElement, OFFSET grid, ebx
-        .IF eax == -1
-            invoke RevealAt, ebx
-        .ENDIF
-        inc ebx
-    .ENDW
-
-    pop ebx
-    ret
-RevealAllMines endp
+StopGame endp
 
 CheckHasWon proc hWnd:HWND
     LOCAL hasWon:BYTE
@@ -607,6 +443,169 @@ CheckHasWon proc hWnd:HWND
     pop ebx
     ret
 CheckHasWon endp
+
+TimeCallback proc hWnd:HWND, uMsg:UINT, pMidEvent:DWORD, dwTime:DWORD
+    inc gameTime
+
+    invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE 
+
+    ret
+TimeCallback endp
+
+; ******************************************************************************
+; Tile revealing
+; ******************************************************************************
+
+RevealAt proc i:DWORD
+    push esi
+
+    mov esi, OFFSET visibilityArray
+    mov eax, i
+    m2m [esi + 4 * eax], 1
+
+    pop esi
+    ret
+RevealAt endp
+
+RevealAtXY proc x:DWORD, y:DWORD
+    invoke ConvertToArrayPos, x, y
+    invoke RevealAt, eax
+
+    ret
+RevealAtXY endp
+
+RevealAllMines proc
+    push ebx
+
+    mov ebx, 0
+
+    .WHILE ebx < GRID_SIZE
+        invoke GetArrayElement, OFFSET grid, ebx
+        .IF eax == -1
+            invoke RevealAt, ebx
+        .ENDIF
+        inc ebx
+    .ENDW
+
+    pop ebx
+    ret
+RevealAllMines endp
+
+RevealArea proc x:DWORD, y:DWORD
+    LOCAL hasTilesToProcess:BYTE
+
+    mov hasTilesToProcess, TRUE
+    
+    mov esi, OFFSET viewedTiles
+    mov eax, 0
+    .WHILE eax < GRID_SIZE
+        m2m [esi + 4 * eax], 0
+        inc eax
+    .ENDW
+
+    invoke ConvertToArrayPos, x, y
+    invoke RevealAreaStep, eax
+
+    ret
+RevealArea endp
+
+RevealAreaStep proc pos:DWORD
+    LOCAL remainder:DWORD
+    
+    invoke GetArrayElement, OFFSET viewedTiles, pos
+    .IF eax == 1
+        ret
+    .ENDIF
+
+    push ebx
+
+    push esi
+
+    mov esi, OFFSET viewedTiles
+
+    mov ebx, pos
+    m2m [esi + 4 * ebx], 1
+
+    invoke RevealAt, pos
+
+    pop esi
+
+    ; Stop revealing if we are no longer on empty area 
+    invoke GetArrayElement, OFFSET grid, pos 
+    .IF eax != 0
+        pop ebx
+        ret 
+    .ENDIF 
+ 
+    invoke Divide, ebx, GRID_WIDTH
+    mov remainder, edx
+ 
+    mov ebx, pos 
+ 
+    ; Left side 
+    .IF remainder > 0 
+        sub ebx, 1 
+        invoke RevealAreaStep, ebx 
+         
+        .IF ebx >= GRID_WIDTH
+            sub ebx, GRID_WIDTH
+            invoke RevealAreaStep, ebx
+            add ebx, GRID_WIDTH
+        .ENDIF 
+  
+        add ebx, GRID_WIDTH 
+ 
+        .IF ebx < GRID_SIZE 
+            invoke RevealAreaStep, ebx 
+        .ENDIF 
+    .ENDIF 
+ 
+    mov ebx, pos 
+ 
+    mov eax, GRID_WIDTH 
+    dec eax 
+ 
+    ; Right side 
+    .IF remainder < eax
+        add ebx, 1 
+        invoke RevealAreaStep, ebx
+ 
+        .IF ebx >= GRID_WIDTH
+            sub ebx, GRID_WIDTH
+            invoke RevealAreaStep, ebx
+            add ebx, GRID_WIDTH
+        .ENDIF 
+ 
+        add ebx, GRID_WIDTH 
+ 
+        .IF ebx < GRID_SIZE 
+            invoke RevealAreaStep, ebx
+        .ENDIF 
+    .ENDIF 
+ 
+    mov ebx, pos 
+ 
+    ; Top tile 
+    .IF ebx >= GRID_WIDTH 
+        sub ebx, GRID_WIDTH 
+        invoke RevealAreaStep, ebx 
+    .ENDIF 
+ 
+    mov ebx, pos
+    add ebx, GRID_WIDTH 
+     
+    ; Bottom tile 
+    .IF ebx < GRID_SIZE 
+        invoke RevealAreaStep, ebx 
+    .ENDIF 
+ 
+    pop ebx
+    ret
+RevealAreaStep endp
+
+; ******************************************************************************
+; Mouse handling
+; ******************************************************************************
 
 HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
     LOCAL x:DWORD
@@ -677,13 +676,38 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
     ret
 HandleMouse endp
 
-StopGame proc hWnd:HWND
-    invoke KillTimer, hWnd, ID_TIMER
-    mov gameOver, TRUE
-    invoke RevealAllMines
+ToggleMarkerAt proc x:DWORD, y:DWORD
+    .IF isFirstMove
+        ret
+    .ENDIF
 
+    push esi
+    push ebx
+
+    mov esi, OFFSET visibilityArray
+
+    invoke ConvertToArrayPos, x, y
+    mov ebx, eax
+
+    invoke GetArrayElement, esi, ebx
+    .IF eax == 0
+        .IF leftMines > 0
+            m2m [esi + 4 * ebx], 2
+            dec leftMines
+        .ENDIF
+    .ELSEIF eax == 2
+        m2m [esi + 4 * ebx], 0
+        inc leftMines
+    .ENDIF
+
+    pop ebx
+    pop esi
     ret
-StopGame endp
+ToggleMarkerAt endp
+
+; ******************************************************************************
+; Drawing procedures
+; ******************************************************************************
 
 Paint proc hWnd:DWORD, hDC:HDC
     LOCAL hMemDC:HDC

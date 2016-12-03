@@ -2,56 +2,75 @@
 .model flat, stdcall
 option casemap :none
 
-; include files
-; ~~~~~~~~~~~~~
+; ********************************************************************
+; Include files
+; ********************************************************************
+
 include \masm32\include\windows.inc
 include \masm32\include\masm32.inc
 include \masm32\include\gdi32.inc
 include \masm32\include\user32.inc
 include \masm32\include\kernel32.inc
 
-; macros
-; ~~~~~~
+
+; ********************************************************************
+; Macros
+; ********************************************************************
+
 include \masm32\macros\macros.asm
 
-; libraries
-; ~~~~~~~~~
+
+; ********************************************************************
+; Libraries
+; ********************************************************************
+
 includelib \masm32\lib\masm32.lib
 includelib \masm32\lib\gdi32.lib
 includelib \masm32\lib\user32.lib
 includelib \masm32\lib\kernel32.lib
 
 
+; ********************************************************************
+; Prototypes
+; ********************************************************************
+
 WinMain proto               :HINSTANCE
 WndProc proto               :HWND, :UINT, :WPARAM, :LPARAM
 
 Multiply proto              :DWORD, :DWORD
 Divide proto                :DWORD, :DWORD
-
 ConvertToArrayPos proto     :DWORD, :DWORD
 ShuffleArray proto          :DWORD, :DWORD
 GetArrayElement proto       :DWORD, :DWORD
 GetArrayElementXY proto     :DWORD, :DWORD, :DWORD
 
-IncrementIfMine proto       :DWORD
+ClearGrid proto
 GenerateGrid proto          :DWORD, :DWORD
+IncrementIfMine proto       :DWORD
+
 NewGame proto               :HWND
 StopGame proto              :HWND
+CheckHasWon proto           :HWND
+TimeCallback proto          :HWND, :UINT, :DWORD, :DWORD
+
 RevealAt proto              :DWORD
 RevealAtXY proto            :DWORD, :DWORD
 RevealAllMines proto
-CheckHasWon proto           :HWND
-ClearGrid proto
-
-ContinueRevealing proto :DWORD
-RevealArea proto :DWORD, :DWORD
+RevealArea proto            :DWORD, :DWORD
+RevealAreaStep proto        :DWORD
 
 HandleMouse proto           :HWND, :LPARAM, :BYTE
+ToggleMarkerAt proto        :DWORD, :DWORD
 
 Paint proto                 :DWORD, :DWORD
-DrawGrid proto              :HDC, :HDC
 DrawTime proto              :HDC
 DrawMines proto             :HDC
+DrawGrid proto              :HDC, :HDC
+
+
+; ********************************************************************
+; Data
+; ********************************************************************
 
 IDB_MINE equ                1
 IDB_BG equ                  2
