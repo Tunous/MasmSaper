@@ -619,10 +619,10 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
         ret
     .ENDIF
 
-    invoke Multiply, 20, GRID_WIDTH
+    invoke Multiply, TILE_SIZE, GRID_WIDTH
     mov maxX, eax
 
-    invoke Multiply, 20, GRID_HEIGHT
+    invoke Multiply, TILE_SIZE, GRID_HEIGHT
     mov maxY, eax
 
     mov eax, lParam
@@ -633,7 +633,7 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
         ret
     .ENDIF
 
-    invoke Divide, eax, 20
+    invoke Divide, eax, TILE_SIZE
     mov x, eax
     
     mov eax, lParam
@@ -644,7 +644,7 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
         ret
     .ENDIF
 
-    invoke Divide, eax, 20
+    invoke Divide, eax, TILE_SIZE
     mov y, eax
 
     .IF isLeftClick && isFirstMove
@@ -732,7 +732,10 @@ DrawBitmap proc hDC:HDC, hMemDC:HDC, bitmap:DWORD, x:DWORD, y:DWORD
     invoke SelectObject, hMemDC, bitmap
     mov oldObject, eax
 
-    invoke BitBlt, hDC, x, y, 20, 20, hMemDC, 0, 0, SRCCOPY
+    mov eax, TILE_SIZE
+    sub eax, 1
+
+    invoke BitBlt, hDC, x, y, eax, eax, hMemDC, 0, 0, SRCCOPY
 
     invoke SelectObject, hMemDC, oldObject
 
@@ -748,15 +751,12 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
     LOCAL y:DWORD
     LOCAL endX:DWORD
     LOCAL endY:DWORD
-    LOCAL color:DWORD
     LOCAL originalAlign:DWORD
     LOCAL originalBkMode:DWORD
     LOCAL currentCount:DWORD
     
     ; Initialize brush
-    invoke GetSysColor, COLOR_BTNSHADOW
-    mov color, eax
-    invoke CreateSolidBrush, color
+    invoke CreateSolidBrush, Black
     mov brush, eax
     invoke SelectObject, hDC, brush
     mov oldBrush, eax
@@ -768,19 +768,26 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
     invoke GetTextAlign, hDC
     mov originalAlign, eax
     invoke SetTextAlign, hDC, TA_CENTER or VTA_CENTER or TA_NOUPDATECP
+
+    invoke Multiply, GRID_WIDTH, TILE_SIZE
+    mov x, eax
+    add x, 11
+    invoke Multiply, GRID_HEIGHT, TILE_SIZE
+    mov y, eax
+    add y, 11
+
+    invoke Rectangle, hDC, 10, 10, x, y
     
     mov i, 0
-    mov x, 10
+    mov x, 11
     mov endX, 30
 
     .WHILE i < 12
         mov j, 0
-        mov y, 10
+        mov y, 11
         mov endY, 30
         
         .WHILE j < 15
-            ;invoke Rectangle, hDC, x, y, endX, endY
-
             invoke GetArrayElementXY, OFFSET visibilityArray, i, j
 
             .IF eax != 0
@@ -797,7 +804,7 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
                             push x
                             push y
                             add x, 10
-                            add y, 2
+                            add y, 1
 
 
                             invoke TextOut, hDC, x, y, ADDR countText, SIZEOF countText - 1
@@ -812,14 +819,16 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
             .ELSE
                 invoke DrawBitmap, hDC, hMemDC, tileBitmap, x, y
             .ENDIF
-            
-            add y, 20
-            add endY, 20
+
+            mov eax, TILE_SIZE
+            add y, eax
+            add endY, eax
             inc j
         .ENDW
-        
-        add x, 20
-        add endX, 20
+
+        mov eax, TILE_SIZE
+        add x, eax
+        add endX, eax
         inc i
     .ENDW
 

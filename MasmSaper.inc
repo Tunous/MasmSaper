@@ -62,6 +62,7 @@ IDB_MARKER equ              4
     GRID_WIDTH              DD 12
     GRID_HEIGHT             DD 15
     ID_TIMER                DD 1001
+    TILE_SIZE               DD 19
 
 .data
     windowTitle             DB "Saper", 0
