@@ -49,9 +49,14 @@ RevealArea proto :DWORD, :DWORD
 HandleMouse proto           :HWND, :LPARAM, :BYTE
 
 Paint proto                 :DWORD, :DWORD
-DrawGrid proto              :DWORD
-DrawTime proto              :DWORD
-DrawMines proto             :DWORD
+DrawGrid proto              :HDC, :HDC
+DrawTime proto              :HDC
+DrawMines proto             :HDC
+
+IDB_MINE equ                1
+IDB_BG equ                  2
+IDB_TILE equ                3
+IDB_MARKER equ              4
 
 .const
     GRID_WIDTH              DD 12
@@ -82,3 +87,8 @@ DrawMines proto             :DWORD
     drawText                DB 4 DUP (?)
     countText               DB 2 DUP (?)
     mineGenerationArray     DD 180 DUP (?)
+
+    mineBitmap              DD ?
+    bgBitmap                DD ?
+    tileBitmap              DD ?
+    markerBitmap            DD ?

@@ -38,8 +38,8 @@ WinMain proc hInst:HINSTANCE
            WS_OVERLAPPED or WS_CAPTION or WS_SYSMENU or WS_MINIMIZEBOX,
            CW_USEDEFAULT,
            CW_USEDEFAULT,
-           255,
-           375,
+           270,
+           385,
            0,
            0,
            hInst,
@@ -185,8 +185,25 @@ ContinueRevealing endp
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL hDC:DWORD
     LOCAL ps:PAINTSTRUCT
+
+    .IF uMsg == WM_CREATE
+        invoke LoadBitmap, hInstance, IDB_MINE
+        mov mineBitmap, eax
+
+        invoke LoadBitmap, hInstance, IDB_BG
+        mov bgBitmap, eax
+
+        invoke LoadBitmap, hInstance, IDB_TILE
+        mov tileBitmap, eax
+
+        invoke LoadBitmap, hInstance, IDB_MARKER
+        mov markerBitmap, eax
     
-    .IF uMsg == WM_DESTROY
+    .ELSEIF uMsg == WM_DESTROY
+        invoke DeleteObject, mineBitmap
+        invoke DeleteObject, bgBitmap
+        invoke DeleteObject, tileBitmap
+        invoke DeleteObject, markerBitmap
         invoke PostQuitMessage, 0
 
     .ELSEIF uMsg == WM_COMMAND
@@ -602,10 +619,10 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
         ret
     .ENDIF
 
-    invoke Multiply, 19, GRID_WIDTH
+    invoke Multiply, 20, GRID_WIDTH
     mov maxX, eax
 
-    invoke Multiply, 19, GRID_HEIGHT
+    invoke Multiply, 20, GRID_HEIGHT
     mov maxY, eax
 
     mov eax, lParam
@@ -616,7 +633,7 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
         ret
     .ENDIF
 
-    invoke Divide, eax, 19
+    invoke Divide, eax, 20
     mov x, eax
     
     mov eax, lParam
@@ -627,7 +644,7 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
         ret
     .ENDIF
 
-    invoke Divide, eax, 19
+    invoke Divide, eax, 20
     mov y, eax
 
     .IF isLeftClick && isFirstMove
@@ -668,14 +685,21 @@ StopGame proc hWnd:HWND
     ret
 StopGame endp
 
-Paint proc hWnd:DWORD, hDC:DWORD
-    invoke DrawGrid, hDC
+Paint proc hWnd:DWORD, hDC:HDC
+    LOCAL hMemDC:HDC
+
+    invoke CreateCompatibleDC, hDC
+    mov hMemDC, eax
+
+    invoke DrawGrid, hDC, hMemDC
     invoke DrawTime, hDC
     invoke DrawMines, hDC
+
+    invoke DeleteDC, hMemDC
     ret
 Paint endp
 
-DrawTime proc hDC:DWORD
+DrawTime proc hDC:HDC
     LOCAL minutes:DWORD
     LOCAL seconds:DWORD
     
@@ -684,25 +708,38 @@ DrawTime proc hDC:DWORD
     mov seconds, edx
     
     invoke dwtoa, minutes, OFFSET drawText
-    invoke TextOut, hDC, 30, 305, ADDR drawText, SIZEOF drawText - 1
+    invoke TextOut, hDC, 30, 315, ADDR drawText, SIZEOF drawText - 1
 
-    invoke TextOut, hDC, 50, 305, ADDR timeDivider, SIZEOF timeDivider
+    invoke TextOut, hDC, 50, 315, ADDR timeDivider, SIZEOF timeDivider
 
     invoke dwtoa, seconds, OFFSET drawText
-    invoke TextOut, hDC, 60, 305, ADDR drawText, SIZEOF drawText - 1
+    invoke TextOut, hDC, 60, 315, ADDR drawText, SIZEOF drawText - 1
 
     ret
 DrawTime endp
 
-DrawMines proc hDC:DWORD
-    invoke TextOut, hDC, 210, 305, ADDR star, SIZEOF star - 1
+DrawMines proc hDC:HDC
+    invoke TextOut, hDC, 210, 315, ADDR star, SIZEOF star - 1
     invoke dwtoa, leftMines, OFFSET drawText
-    invoke TextOut, hDC, 220, 305, ADDR drawText, SIZEOF drawText - 1
+    invoke TextOut, hDC, 220, 315, ADDR drawText, SIZEOF drawText - 1
 
     ret
 DrawMines endp
 
-DrawGrid proc hDC:DWORD
+DrawBitmap proc hDC:HDC, hMemDC:HDC, bitmap:DWORD, x:DWORD, y:DWORD
+    LOCAL oldObject:DWORD
+
+    invoke SelectObject, hMemDC, bitmap
+    mov oldObject, eax
+
+    invoke BitBlt, hDC, x, y, 20, 20, hMemDC, 0, 0, SRCCOPY
+
+    invoke SelectObject, hMemDC, oldObject
+
+    ret
+DrawBitmap endp
+
+DrawGrid proc hDC:HDC, hMemDC:HDC
     LOCAL brush:DWORD
     LOCAL oldBrush:DWORD
     LOCAL i:DWORD
@@ -714,6 +751,7 @@ DrawGrid proc hDC:DWORD
     LOCAL color:DWORD
     LOCAL originalAlign:DWORD
     LOCAL originalBkMode:DWORD
+    LOCAL currentCount:DWORD
     
     ; Initialize brush
     invoke GetSysColor, COLOR_BTNSHADOW
@@ -741,39 +779,47 @@ DrawGrid proc hDC:DWORD
         mov endY, 30
         
         .WHILE j < 15
-            invoke Rectangle, hDC, x, y, endX, endY
+            ;invoke Rectangle, hDC, x, y, endX, endY
 
             invoke GetArrayElementXY, OFFSET visibilityArray, i, j
 
             .IF eax != 0
-                push x
-                push y
-                add x, 10
-                add y, 2
-
                 .IF eax == 1
                     invoke GetArrayElementXY, OFFSET grid, i, j
+                    mov currentCount, eax
                     .IF eax == -1
-                        invoke TextOut, hDC, x, y, ADDR star, SIZEOF star - 1
+                        invoke DrawBitmap, hDC, hMemDC, mineBitmap, x, y
                     .ELSE
                         invoke dwtoa, eax, OFFSET countText
-                        invoke TextOut, hDC, x, y, ADDR countText, SIZEOF countText - 1
+                        invoke DrawBitmap, hDC, hMemDC, bgBitmap, x, y
+
+                        .IF currentCount > 0
+                            push x
+                            push y
+                            add x, 10
+                            add y, 2
+
+
+                            invoke TextOut, hDC, x, y, ADDR countText, SIZEOF countText - 1
+
+                            pop y
+                            pop x
+                        .ENDIF
                     .ENDIF
                 .ELSE
-                     invoke TextOut, hDC, x, y, ADDR marker, SIZEOF marker - 1
+                    invoke DrawBitmap, hDC, hMemDC, markerBitmap, x, y
                 .ENDIF
-
-                pop y
-                pop x
+            .ELSE
+                invoke DrawBitmap, hDC, hMemDC, tileBitmap, x, y
             .ENDIF
             
-            add y, 19
-            add endY, 19
+            add y, 20
+            add endY, 20
             inc j
         .ENDW
         
-        add x, 19
-        add endX, 19
+        add x, 20
+        add endX, 20
         inc i
     .ENDW
 
