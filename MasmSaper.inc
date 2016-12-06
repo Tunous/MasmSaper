@@ -72,16 +72,16 @@ DrawGrid proto              :HDC, :HDC
 ; Data
 ; ********************************************************************
 
-IDB_MINE equ                1
-IDB_BG equ                  2
-IDB_TILE equ                3
-IDB_MARKER equ              4
-
 .const
-    GRID_WIDTH              DD 12
-    GRID_HEIGHT             DD 15
-    ID_TIMER                DD 1001
-    TILE_SIZE               DD 19
+    GRID_WIDTH              EQU 12
+    GRID_HEIGHT             EQU 15
+    ID_TIMER                EQU 1001
+    TILE_SIZE               EQU 19
+    GRID_SIZE               EQU GRID_WIDTH * GRID_HEIGHT
+    IDB_MINE                EQU 1
+    IDB_BG                  EQU 2
+    IDB_TILE                EQU 3
+    IDB_MARKER              EQU 4
 
 .data
     windowTitle             DB "Saper", 0
@@ -102,7 +102,6 @@ IDB_MARKER equ              4
     leftMines               DD 30
 
 .data?
-    GRID_SIZE               DD ?
     hInstance               HINSTANCE ?
     drawText                DB 4 DUP (?)
     countText               DB 2 DUP (?)

@@ -50,9 +50,6 @@ WinMain proc hInst:HINSTANCE
     invoke LoadMenu, hInst, 600
     invoke SetMenu, hWnd, eax
 
-    invoke Multiply, GRID_WIDTH, GRID_HEIGHT
-    mov GRID_SIZE, eax
-
     invoke ShowWindow, hWnd, SW_SHOWNORMAL
     invoke UpdateWindow, hWnd
 
