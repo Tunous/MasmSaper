@@ -787,15 +787,6 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
     invoke GetTextAlign, hDC
     mov originalAlign, eax
     invoke SetTextAlign, hDC, TA_CENTER or VTA_CENTER or TA_NOUPDATECP
-
-    invoke Multiply, GRID_WIDTH, TILE_SIZE
-    mov x, eax
-    add x, 11
-    invoke Multiply, GRID_HEIGHT, TILE_SIZE
-    mov y, eax
-    add y, 11
-
-    invoke Rectangle, hDC, 10, 10, x, y
     
     mov i, 0
     mov x, 11
