@@ -211,19 +211,16 @@ GetArrayElementXY endp
 ClearGrid proc
     push esi
     push edi
-    push ebx
     
     mov esi, OFFSET grid
     mov edi, OFFSET visibilityArray
-    mov ebx, 0
 
     .WHILE eax < GRID_SIZE
-        mov [esi + 4 * eax], ebx
-        mov [edi + 4 * eax], ebx
+        m2m [esi + 4 * eax], 0
+        m2m [edi + 4 * eax], 0
         inc eax
     .ENDW
 
-    pop ebx
     pop edi
     pop esi
     ret
