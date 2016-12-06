@@ -825,7 +825,7 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
 
                     .IF currentCount > 0
                         ; Draw number
-                        add x, 10
+                        add x, 9
                         add y, 1
 
                         .IF currentCount == 1
@@ -854,7 +854,7 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
                         pop eax
                         invoke SetTextColor, hDC, eax
 
-                        sub x, 10
+                        sub x, 9
                         sub y, 1
                     .ENDIF
                 .ENDIF
