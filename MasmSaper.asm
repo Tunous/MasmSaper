@@ -211,6 +211,7 @@ ClearGrid proc
     
     mov esi, OFFSET grid
     mov edi, OFFSET visibilityArray
+    mov eax, 0
 
     .WHILE eax < GRID_SIZE
         m2m [esi + 4 * eax], 0
