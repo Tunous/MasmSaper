@@ -75,12 +75,20 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 
         invoke LoadBitmap, hInstance, IDB_MARKER
         mov markerBitmap, eax
+
+        invoke LoadBitmap, hInstance, IDB_MINE_CORRECT
+        mov mineCorrectBitmap, eax
+
+        invoke LoadBitmap, hInstance, IDB_MINE_INVALID
+        mov mineInvalidBitmap, eax
     
     .ELSEIF uMsg == WM_DESTROY
         invoke DeleteObject, mineBitmap
         invoke DeleteObject, bgBitmap
         invoke DeleteObject, tileBitmap
         invoke DeleteObject, markerBitmap
+        invoke DeleteObject, mineCorrectBitmap
+        invoke DeleteObject, mineInvalidBitmap
         invoke PostQuitMessage, 0
 
     .ELSEIF uMsg == WM_COMMAND
@@ -647,6 +655,9 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
         invoke SetTimer, hWnd, ID_TIMER, 1000, OFFSET TimeCallback
     .ENDIF
 
+    invoke ConvertToArrayPos, x, y
+    mov lastClickPosition, eax
+
     .IF isLeftClick
         invoke GetArrayElementXY, OFFSET visibilityArray, x, y
         .IF eax != 2
@@ -789,11 +800,11 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
     mov i, 0
     mov x, 11
 
-    .WHILE i < 12
+    .WHILE i < GRID_WIDTH
         mov j, 0
         mov y, 11
         
-        .WHILE j < 15
+        .WHILE j < GRID_HEIGHT
             invoke GetArrayElementXY, OFFSET visibilityArray, i, j
 
             .IF eax == 1
@@ -802,7 +813,12 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
 
                 .IF currentCount == -1
                     ; Draw mine
-                    invoke DrawBitmap, hDC, hMemDC, mineBitmap, x, y
+                    invoke ConvertToArrayPos, i, j
+                    .IF eax == lastClickPosition
+                        invoke DrawBitmap, hDC, hMemDC, mineInvalidBitmap, x, y
+                    .ELSE
+                        invoke DrawBitmap, hDC, hMemDC, mineBitmap, x, y
+                    .ENDIF
 
                 .ELSE
                     ; Draw background

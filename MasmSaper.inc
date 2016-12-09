@@ -78,10 +78,13 @@ DrawGrid proto              :HDC, :HDC
     ID_TIMER                EQU 1001
     TILE_SIZE               EQU 19
     GRID_SIZE               EQU GRID_WIDTH * GRID_HEIGHT
+
     IDB_MINE                EQU 1
     IDB_BG                  EQU 2
     IDB_TILE                EQU 3
     IDB_MARKER              EQU 4
+    IDB_MINE_CORRECT        EQU 5
+    IDB_MINE_INVALID        EQU 6
 
 .data
     windowTitle             DB "Saper", 0
@@ -111,3 +114,7 @@ DrawGrid proto              :HDC, :HDC
     bgBitmap                DD ?
     tileBitmap              DD ?
     markerBitmap            DD ?
+    mineCorrectBitmap       DD ?
+    mineInvalidBitmap       DD ?
+
+    lastClickPosition       DD ?

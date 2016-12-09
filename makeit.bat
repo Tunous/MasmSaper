@@ -10,6 +10,7 @@ if errorlevel 1 goto errasm
 
 : Build resources
 \masm32\bin\rc rsrc.rc
+if errorlevel 1 goto errres
 
 : Build exe
 \masm32\bin\link /SUBSYSTEM:WINDOWS "MasmSaper.obj" "rsrc.res"
@@ -25,6 +26,11 @@ goto TheEnd
 :errasm
   echo _
   echo Assembly Error
+  goto TheEnd
+
+:errres
+  echo _
+  echo Resources Error
   goto TheEnd
     
 :TheEnd
