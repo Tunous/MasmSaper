@@ -53,7 +53,7 @@ StopGame proto              :HWND
 CheckHasWon proto           :HWND
 TimeCallback proto          :HWND, :UINT, :DWORD, :DWORD
 
-RevealAt proto              :DWORD
+RevealAt proto              :DWORD, :BYTE
 RevealAtXY proto            :DWORD, :DWORD
 RevealAllMines proto
 RevealArea proto            :DWORD, :DWORD

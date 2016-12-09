@@ -459,20 +459,29 @@ TimeCallback endp
 ; Tile revealing
 ; ******************************************************************************
 
-RevealAt proc i:DWORD
+RevealAt proc i:DWORD, isSpecialReveal:BYTE
     push esi
+    push ebx
 
     mov esi, OFFSET visibilityArray
     mov eax, i
-    m2m [esi + 4 * eax], 1
 
+    mov ebx, [esi + 4 * eax]
+
+    .IF isSpecialReveal && ebx == 2
+        m2m [esi + 4 * eax], 3
+    .ELSE
+        m2m [esi + 4 * eax], 1
+    .ENDIF
+
+    pop ebx
     pop esi
     ret
 RevealAt endp
 
 RevealAtXY proc x:DWORD, y:DWORD
     invoke ConvertToArrayPos, x, y
-    invoke RevealAt, eax
+    invoke RevealAt, eax, FALSE
 
     ret
 RevealAtXY endp
@@ -485,7 +494,7 @@ RevealAllMines proc
     .WHILE ebx < GRID_SIZE
         invoke GetArrayElement, OFFSET grid, ebx
         .IF eax == -1
-            invoke RevealAt, ebx
+            invoke RevealAt, ebx, TRUE
         .ENDIF
         inc ebx
     .ENDW
@@ -529,7 +538,7 @@ RevealAreaStep proc pos:DWORD
     mov ebx, pos
     m2m [esi + 4 * ebx], 1
 
-    invoke RevealAt, pos
+    invoke RevealAt, pos, FALSE
 
     pop esi
 
@@ -864,6 +873,10 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
             .ELSEIF eax == 2
                 ; Draw marker
                 invoke DrawBitmap, hDC, hMemDC, markerBitmap, x, y
+
+            .ELSEIF eax == 3
+                ; Draw correctly marked mine
+                invoke DrawBitmap, hDC, hMemDC, mineCorrectBitmap, x, y
 
             .ELSE
                 ; Draw empty tile
