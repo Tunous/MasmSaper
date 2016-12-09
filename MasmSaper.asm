@@ -10,7 +10,6 @@ start:
 WinMain proc hInst:HINSTANCE
     LOCAL wc:WNDCLASSEX
     LOCAL msg:MSG
-    LOCAL hWnd:HWND
 
     mov wc.cbSize, SIZEOF WNDCLASSEX
     mov wc.style, CS_HREDRAW or CS_VREDRAW
@@ -45,19 +44,47 @@ WinMain proc hInst:HINSTANCE
            hInst,
            0
 
-    mov hWnd, eax
+    mov hMainWnd, eax
 
     invoke LoadMenu, hInst, 600
-    invoke SetMenu, hWnd, eax
+    invoke SetMenu, hMainWnd, eax
 
-    invoke ShowWindow, hWnd, SW_SHOWNORMAL
-    invoke UpdateWindow, hWnd
+    invoke ShowWindow, hMainWnd, SW_SHOWNORMAL
+    invoke UpdateWindow, hMainWnd
 
     BeginMessageLoop msg
     EndMessageLoop msg
 
     return msg.wParam
 WinMain endp
+
+DialogProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+    .IF uMsg == WM_INITDIALOG
+        invoke SendDlgItemMessage, hWnd, 202, UDM_SETRANGE32, 1, 100
+        invoke SetDlgItemInt, hWnd, 201, minesCount, FALSE
+        invoke SetFocus, hWnd
+
+    .ELSEIF uMsg == WM_CLOSE
+        invoke EndDialog, hWnd, NULL
+
+    .ELSEIF uMsg == WM_COMMAND
+        .IF wParam == 203
+            invoke GetDlgItemInt, hWnd, 201, NULL, FALSE
+            mov minesCount, eax
+            .IF minesCount > 100
+                mov minesCount, 100
+            .ELSEIF minesCount < 1
+                mov minesCount, 1
+            .ENDIF
+            invoke EndDialog, hWnd, NULL
+            invoke StopGame, hMainWnd
+            invoke NewGame, hMainWnd
+        .ENDIF
+    .ENDIF
+
+    xor eax, eax
+    ret
+DialogProc endp
 
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL hDC:DWORD
@@ -100,6 +127,9 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 
         .ELSEIF wParam == 1900
             invoke MessageBox, hWnd, ADDR author, ADDR authorPopupTitle, MB_OK
+
+        .ELSEIF wParam == 501
+            invoke DialogBoxParam, hInstance, ADDR dialogName, 0, ADDR DialogProc, 0
         .ENDIF
 
     .ELSEIF uMsg == WM_PAINT
@@ -266,7 +296,7 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
 
     xor ebx, ebx
     mov edx, -1
-    mov eax, 30
+    mov eax, minesCount
     
     ; Select fixed amount of randomized positions for mines
     .WHILE ebx < eax
@@ -402,7 +432,7 @@ NewGame proc hWnd:HWND
     mov gameOver, FALSE
     mov isFirstMove, TRUE
     mov gameTime, 0
-    mov leftMines, 30
+    m2m leftMines, minesCount
 
     invoke RedrawWindow, hWnd, NULL, NULL, RDW_INVALIDATE
 

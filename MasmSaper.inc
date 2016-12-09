@@ -67,6 +67,8 @@ DrawTime proto              :HDC
 DrawMines proto             :HDC
 DrawGrid proto              :HDC, :HDC
 
+DialogProc proto            :HWND, :UINT, :DWORD, :DWORD
+
 
 ; ********************************************************************
 ; Data
@@ -86,6 +88,9 @@ DrawGrid proto              :HDC, :HDC
     IDB_MINE_CORRECT        EQU 5
     IDB_MINE_INVALID        EQU 6
 
+    EDIT_ID                 EQU 52
+    BUTTON_ID               EQU 53
+
 .data
     windowTitle             DB "Saper", 0
     authorPopupTitle        DB "Autor", 0
@@ -103,12 +108,19 @@ DrawGrid proto              :HDC, :HDC
     isFirstMove             DB TRUE
     gameTime                DD 0
     leftMines               DD 30
+    editClassName           DB "edit", 0
+    buttonClassName         DB "button", 0
+    minesCount              DD 30
+    dialogName              DB "popupinfo", 0
+    zeroText DB "5", 0
 
 .data?
     hInstance               HINSTANCE ?
+    hEdit                   HWND ?
     drawText                DB 4 DUP (?)
     countText               DB 2 DUP (?)
     mineGenerationArray     DD 180 DUP (?)
+    hMainWnd                HWND ?
 
     mineBitmap              DD ?
     bgBitmap                DD ?
@@ -118,3 +130,4 @@ DrawGrid proto              :HDC, :HDC
     mineInvalidBitmap       DD ?
 
     lastClickPosition       DD ?
+    minesText               DB 8 DUP (?)
