@@ -63,8 +63,9 @@ HandleMouse proto           :HWND, :LPARAM, :BYTE
 ToggleMarkerAt proto        :DWORD, :DWORD
 
 Paint proto                 :DWORD, :DWORD
+DrawBitmap proto            :HDC, :HDC, :DWORD, :DWORD, :DWORD
 DrawTime proto              :HDC
-DrawMines proto             :HDC
+DrawMines proto             :HDC, :HDC
 DrawGrid proto              :HDC, :HDC
 
 DialogProc proto            :HWND, :UINT, :DWORD, :DWORD
@@ -94,8 +95,6 @@ DialogProc proto            :HWND, :UINT, :DWORD, :DWORD
 .data
     windowTitle             DB "Saper", 0
     className               DB "WinClass", 0
-    star                    DB "*", 0
-    marker                  DB "!", 0
     timeDivider             DB ":", 0
     gameOver                DB FALSE
     winTextTitle            DB "Wygrana", 0
@@ -106,11 +105,8 @@ DialogProc proto            :HWND, :UINT, :DWORD, :DWORD
     isFirstMove             DB TRUE
     gameTime                DD 0
     leftMines               DD 30
-    editClassName           DB "edit", 0
-    buttonClassName         DB "button", 0
     minesCount              DD 30
     dialogName              DB "popupinfo", 0
-    zeroText DB "5", 0
 
 .data?
     hInstance               HINSTANCE ?
@@ -119,6 +115,7 @@ DialogProc proto            :HWND, :UINT, :DWORD, :DWORD
     countText               DB 2 DUP (?)
     mineGenerationArray     DD 180 DUP (?)
     hMainWnd                HWND ?
+    timeText                DB 4 DUP (?)
 
     mineBitmap              DD ?
     bgBitmap                DD ?
@@ -128,4 +125,3 @@ DialogProc proto            :HWND, :UINT, :DWORD, :DWORD
     mineInvalidBitmap       DD ?
 
     lastClickPosition       DD ?
-    minesText               DB 8 DUP (?)

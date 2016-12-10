@@ -759,7 +759,7 @@ Paint proc hWnd:DWORD, hDC:HDC
 
     invoke DrawGrid, hDC, hMemDC
     invoke DrawTime, hDC
-    invoke DrawMines, hDC
+    invoke DrawMines, hDC, hMemDC
 
     invoke DeleteDC, hMemDC
     ret
@@ -773,21 +773,21 @@ DrawTime proc hDC:HDC
     mov minutes, eax
     mov seconds, edx
     
-    invoke dwtoa, minutes, OFFSET drawText
-    invoke TextOut, hDC, 30, 305, ADDR drawText, SIZEOF drawText - 1
+    invoke dwtoa, minutes, OFFSET timeText
+    invoke TextOut, hDC, 30, 301, ADDR timeText, SIZEOF timeText - 1
 
-    invoke TextOut, hDC, 50, 305, ADDR timeDivider, SIZEOF timeDivider
+    invoke TextOut, hDC, 50, 301, ADDR timeDivider, SIZEOF timeDivider - 1
 
-    invoke dwtoa, seconds, OFFSET drawText
-    invoke TextOut, hDC, 60, 305, ADDR drawText, SIZEOF drawText - 1
+    invoke dwtoa, seconds, OFFSET timeText
+    invoke TextOut, hDC, 60, 301, ADDR timeText, SIZEOF timeText - 1
 
     ret
 DrawTime endp
 
-DrawMines proc hDC:HDC
-    invoke TextOut, hDC, 210, 305, ADDR star, SIZEOF star - 1
+DrawMines proc hDC:HDC, hMemDC:HDC
+    invoke DrawBitmap, hDC, hMemDC, mineBitmap, 192, 300
     invoke dwtoa, leftMines, OFFSET drawText
-    invoke TextOut, hDC, 220, 305, ADDR drawText, SIZEOF drawText - 1
+    invoke TextOut, hDC, 215, 301, ADDR drawText, SIZEOF drawText - 1
 
     ret
 DrawMines endp
