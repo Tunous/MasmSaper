@@ -49,6 +49,9 @@ WinMain proc hInst:HINSTANCE
     invoke LoadMenu, hInst, 600
     invoke SetMenu, hMainWnd, eax
 
+    invoke GetTickCount
+    invoke nseed, eax
+
     invoke ShowWindow, hMainWnd, SW_SHOWNORMAL
     invoke UpdateWindow, hMainWnd
 
@@ -205,7 +208,7 @@ ShuffleArray proc arr:DWORD, arraySize:DWORD
     .WHILE lArraySize > 0
         invoke nrandom, arraySize   ; Get the random number within "arraySize" range
         mov ecx, [esi + ebx * 4]    ; Get the incremental pointer
-        mov edx, [edi + eax *4 ]    ; Get the random pointer
+        mov edx, [edi + eax * 4]    ; Get the random pointer
         mov [esi + ebx * 4], edx    ; Write random pointer back to incremental location
         mov [edi + eax * 4], ecx    ; Write incremental pointer back to random location
         add ebx, 1                  ; Increment the original pointer
@@ -284,9 +287,6 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
         inc ebx
     .ENDW
 
-    ; Shuffle it to always get random position
-    invoke GetTickCount
-    invoke nseed, eax
     invoke ShuffleArray, OFFSET mineGenerationArray, GRID_SIZE
 
     mov esi, OFFSET grid
