@@ -93,8 +93,6 @@ DialogProc proto            :HWND, :UINT, :DWORD, :DWORD
 
 .data
     windowTitle             DB "Saper", 0
-    authorPopupTitle        DB "Autor", 0
-    author                  DB "Lukasz Rutkowski", 0
     className               DB "WinClass", 0
     star                    DB "*", 0
     marker                  DB "!", 0

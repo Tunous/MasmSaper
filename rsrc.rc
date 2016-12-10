@@ -5,31 +5,31 @@
 #define IDC_OK_BUTTON 203
 #define IDC_STATIC -1
 
-600 MENUEX MOVEABLE IMPURE LOADONCALL DISCARDABLE
-BEGIN
-  POPUP "&Menu", , , 0
-  BEGIN
-    MENUITEM "&Nowa Gra", 500
-    MENUITEM "&Liczba Min", 501
-    MENUITEM "&Zamknij", 1000
-  END
-  POPUP "&Pomoc", , , 0
-  BEGIN
-    MENUITEM "&Autor", 1900
-  END
-END
+600 MENU
+{
+	POPUP "&Menu"
+	{
+		MENUITEM "&Nowa gra", 500
+		MENUITEM "&Liczba min", 501
+		MENUITEM "&Zakoncz", 1000
+	}
+	POPUP "&Autor"
+	{
+		MENUITEM "&Lukasz Rutkowski", 0
+	}
+}
 
 POPUPINFO DIALOGEX 0, 0, 70, 45
 STYLE DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 CAPTION "Liczba min"
 FONT 8, "MS Sans Serif"
-BEGIN	
+{	
     EDITTEXT        IDC_MINES_INPUT, 15, 5, 50, 15,
 					ES_NUMBER | ES_CENTER | NOT WS_BORDER, WS_EX_CLIENTEDGE
 	CONTROL         "Spin1", IDC_SPIN, "msctls_updown32", UDS_SETBUDDYINT |
 					UDS_AUTOBUDDY | UDS_ARROWKEYS, 5, 5, 11, 15
 	PUSHBUTTON      "OK", IDC_OK_BUTTON, 5, 25, 60, 15, WS_EX_DLGMODALFRAME
-END
+}
 
 #define IDB_MINE 1
 IDB_MINE BITMAP "assets/mine.bmp"

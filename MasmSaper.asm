@@ -128,9 +128,6 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         .ELSEIF wParam == 1000
             invoke PostQuitMessage, 0
 
-        .ELSEIF wParam == 1900
-            invoke MessageBox, hWnd, ADDR author, ADDR authorPopupTitle, MB_OK
-
         .ELSEIF wParam == 501
             invoke DialogBoxParam, hInstance, ADDR dialogName, 0, ADDR DialogProc, 0
         .ENDIF
