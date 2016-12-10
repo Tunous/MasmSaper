@@ -61,34 +61,6 @@ WinMain proc hInst:HINSTANCE
     return msg.wParam
 WinMain endp
 
-DialogProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
-    .IF uMsg == WM_INITDIALOG
-        invoke SendDlgItemMessage, hWnd, 202, UDM_SETRANGE32, 1, 100
-        invoke SetDlgItemInt, hWnd, 201, minesCount, FALSE
-        invoke SetFocus, hWnd
-
-    .ELSEIF uMsg == WM_CLOSE
-        invoke EndDialog, hWnd, NULL
-
-    .ELSEIF uMsg == WM_COMMAND
-        .IF wParam == 203
-            invoke GetDlgItemInt, hWnd, 201, NULL, FALSE
-            mov minesCount, eax
-            .IF minesCount > 100
-                mov minesCount, 100
-            .ELSEIF minesCount < 1
-                mov minesCount, 1
-            .ENDIF
-            invoke EndDialog, hWnd, NULL
-            invoke StopGame, hMainWnd
-            invoke NewGame, hMainWnd
-        .ENDIF
-    .ENDIF
-
-    xor eax, eax
-    ret
-DialogProc endp
-
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL hDC:DWORD
     LOCAL ps:PAINTSTRUCT
@@ -151,6 +123,34 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     ret
 WndProc endp
 
+DialogProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+    .IF uMsg == WM_INITDIALOG
+        invoke SendDlgItemMessage, hWnd, 202, UDM_SETRANGE32, 1, 100
+        invoke SetDlgItemInt, hWnd, 201, minesCount, FALSE
+        invoke SetFocus, hWnd
+
+    .ELSEIF uMsg == WM_CLOSE
+        invoke EndDialog, hWnd, NULL
+
+    .ELSEIF uMsg == WM_COMMAND
+        .IF wParam == 203
+            invoke GetDlgItemInt, hWnd, 201, NULL, FALSE
+            mov minesCount, eax
+            .IF minesCount > 100
+                mov minesCount, 100
+            .ELSEIF minesCount < 1
+                mov minesCount, 1
+            .ENDIF
+            invoke EndDialog, hWnd, NULL
+            invoke StopGame, hMainWnd
+            invoke NewGame, hMainWnd
+        .ENDIF
+    .ENDIF
+
+    xor eax, eax
+    ret
+DialogProc endp
+
 ; ******************************************************************************
 ; Utility procedures
 ; ******************************************************************************
@@ -165,7 +165,7 @@ Multiply proc a:DWORD, b:DWORD
 
     pop ebx
 
-    return eax
+    ret
 Multiply endp
 
 Divide proc a:DWORD, b:DWORD
@@ -249,7 +249,7 @@ ClearGrid proc
     
     mov esi, OFFSET grid
     mov edi, OFFSET visibilityArray
-    mov eax, 0
+    xor eax, eax
 
     .WHILE eax < GRID_SIZE
         m2m [esi + 4 * eax], 0
@@ -270,38 +270,25 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
     push esi
     push edi
     push ecx
-    push edx
 
+    invoke InitMineGenArray
+
+    ; Calculate the position at which we shouldn't place a mine
     invoke ConvertToArrayPos, ignoreX, ignoreY
     mov ignorePos, eax 
 
-    ; Initialize array holding positions for mines
-    mov esi, OFFSET mineGenerationArray
-    xor ebx, ebx
-
-    .WHILE ebx < GRID_SIZE
-        mov [esi + 4 * ebx], ebx
-        inc ebx
-    .ENDW
-
-    invoke ShuffleArray, OFFSET mineGenerationArray, GRID_SIZE
-
     mov esi, OFFSET grid
     mov edi, OFFSET mineGenerationArray
-
-    invoke ClearGrid
-
     xor ebx, ebx
-    mov edx, -1
     mov eax, minesCount
     
     ; Select fixed amount of randomized positions for mines
     .WHILE ebx < eax
         mov ecx, [edi + 4 * ebx]                    ; Get position from first array
         .IF ecx == ignorePos                        ; If this position is ignored then we don't want to place mine here
-            inc eax                                 ; Let's skip it and take different pos
+            inc eax                                 ; Let's skip it and take different position
         .ELSE
-            mov [esi + 4 * ecx], edx                ; And place mine at that position in actual array
+            m2m [esi + 4 * ecx], MINE               ; Place mine at the position in grid array
         .ENDIF
         inc ebx
     .ENDW
@@ -312,96 +299,109 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
         mov mines, 0                                ; Reset count
         mov ecx, [esi + 4 * ebx]                    ; Get grid element
 
-        .IF ecx != -1                               ; Skip mines
-            push ebx                                ; Store current position
+        ; Skip mines
+        .IF ecx == MINE
+            inc ebx
+            .CONTINUE
+        .ENDIF
 
-            invoke Divide, ebx, GRID_WIDTH
+        ; Store current position
+        push ebx
 
-            pop ebx
-            push ebx
+        invoke Divide, ebx, GRID_WIDTH
 
-            ; Check for mines at each near position
+        .IF edx > 0
+            ; ...
+            ; XO.
+            ; ...
+            sub ebx, 1
+            invoke IncrementIfMine, mines
+            mov mines, eax
 
-            ; Left side
-            .IF edx > 0
-                sub ebx, 1                          ; ...
-                invoke IncrementIfMine, mines       ; XO.
-                mov mines, eax                      ; ...
-                
-                .IF ebx >= GRID_WIDTH
-                    sub ebx, GRID_WIDTH             ; X..
-                    invoke IncrementIfMine, mines   ; .O.
-                    mov mines, eax                  ; ...
-                    add ebx, GRID_WIDTH
-                .ENDIF
-
+            ; X..
+            ; .O.
+            ; ...
+            .IF ebx >= GRID_WIDTH
+                sub ebx, GRID_WIDTH
+                invoke IncrementIfMine, mines
+                mov mines, eax
                 add ebx, GRID_WIDTH
-
-                .IF ebx < GRID_SIZE                 ; ...
-                    invoke IncrementIfMine, mines   ; .O.
-                    mov mines, eax                  ; X..
-                .ENDIF
             .ENDIF
-
-            pop ebx
-            push ebx
-
-            mov eax, GRID_WIDTH
-            dec eax
-
-            ; Right side
-            .IF edx < eax
-                add ebx, 1                          ; ...
-                invoke IncrementIfMine, mines       ; .OX
-                mov mines, eax                      ; ...
-
-                .IF ebx >= GRID_WIDTH
-                    sub ebx, GRID_WIDTH             ; ..X
-                    invoke IncrementIfMine, mines   ; .O.
-                    mov mines, eax                  ; ...
-                    add ebx, GRID_WIDTH
-                .ENDIF
-
-                add ebx, GRID_WIDTH
-
-                .IF ebx < GRID_SIZE                 ; ...
-                    invoke IncrementIfMine, mines   ; .O.
-                    mov mines, eax                  ; ..X
-                .ENDIF
-            .ENDIF
-
-            pop ebx
-            push ebx
-
-            mov eax, GRID_WIDTH
-
-            ; Top tile
-            .IF ebx >= eax
-                sub ebx, GRID_WIDTH                 ; .X.
-                invoke IncrementIfMine, mines       ; .O.
-                mov mines, eax                      ; ...
-            .ENDIF
-
-            pop ebx
-            push ebx
 
             add ebx, GRID_WIDTH
-            
-            ; Bottom tile
-            .IF ebx < GRID_SIZE                     ; ...
-                invoke IncrementIfMine, mines       ; .O.
-                mov mines, eax                      ; .X.
+
+            ; ...
+            ; .O.
+            ; X..
+            .IF ebx < GRID_SIZE
+                invoke IncrementIfMine, mines
+                mov mines, eax
             .ENDIF
 
             pop ebx
-            mov eax, mines
-            mov [esi + 4 * ebx], eax
+            push ebx
         .ENDIF
+
+        .IF edx < GRID_WIDTH - 1
+            ; ...
+            ; .OX
+            ; ...
+            add ebx, 1
+            invoke IncrementIfMine, mines
+            mov mines, eax
+
+            ; ..X
+            ; .O.
+            ; ...
+            .IF ebx >= GRID_WIDTH
+                sub ebx, GRID_WIDTH
+                invoke IncrementIfMine, mines
+                mov mines, eax
+                add ebx, GRID_WIDTH
+            .ENDIF
+
+            ; ...
+            ; .O.
+            ; ..X
+            add ebx, GRID_WIDTH
+
+            .IF ebx < GRID_SIZE
+                invoke IncrementIfMine, mines
+                mov mines, eax
+            .ENDIF
+
+            pop ebx
+            push ebx
+        .ENDIF
+
+        ; .X.
+        ; .O.
+        ; ...
+        .IF ebx >= GRID_WIDTH
+            sub ebx, GRID_WIDTH
+            invoke IncrementIfMine, mines
+            mov mines, eax
+
+            pop ebx
+            push ebx
+        .ENDIF
+
+        ; ...
+        ; .O.
+        ; .X.
+        add ebx, GRID_WIDTH
+        .IF ebx < GRID_SIZE
+            invoke IncrementIfMine, mines
+            mov mines, eax
+        .ENDIF
+
+        pop ebx
+        
+        m2m [esi + 4 * ebx], mines
 
         inc ebx
     .ENDW
 
-    pop edx
     pop ecx
     pop edi
     pop esi
@@ -410,9 +410,27 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
     ret
 GenerateGrid endp
 
+InitMineGenArray proc
+    push esi
+
+    mov esi, OFFSET mineGenerationArray
+    xor eax, eax
+
+    .WHILE eax < GRID_SIZE
+        mov [esi + 4 * eax], eax
+        inc eax
+    .ENDW
+
+    invoke ShuffleArray, esi, GRID_SIZE
+    invoke ClearGrid
+
+    pop esi
+    ret
+InitMineGenArray endp
+
 IncrementIfMine proc mines:DWORD
-    mov ecx, [esi + 4 * ebx]
-    .IF ecx == -1
+    mov eax, [esi + 4 * ebx]
+    .IF eax == MINE
         inc mines
     .ENDIF
 
@@ -456,7 +474,7 @@ CheckHasWon proc hWnd:HWND
         invoke GetArrayElement, OFFSET visibilityArray, ebx
         .IF !eax
             invoke GetArrayElement, OFFSET grid, ebx
-            .IF eax != -1
+            .IF eax != MINE
                 mov hasWon, FALSE
                 .BREAK
             .ENDIF
@@ -520,7 +538,7 @@ RevealAllMines proc
 
     .WHILE ebx < GRID_SIZE
         invoke GetArrayElement, OFFSET grid, ebx
-        .IF eax == -1
+        .IF eax == MINE
             invoke RevealAt, ebx, TRUE
         .ENDIF
         inc ebx
@@ -550,21 +568,22 @@ RevealArea endp
 
 RevealAreaStep proc pos:DWORD
     LOCAL remainder:DWORD
-    
+
+    ; Skip already viewed tiles
     invoke GetArrayElement, OFFSET viewedTiles, pos
-    .IF eax == 1
+    .IF eax == TRUE
         ret
     .ENDIF
 
     push ebx
-
     push esi
 
+    ; Mark tile as viewed
     mov esi, OFFSET viewedTiles
-
     mov ebx, pos
-    m2m [esi + 4 * ebx], 1
+    m2m [esi + 4 * ebx], TRUE
 
+    ; Reveal the tile
     invoke RevealAt, pos, FALSE
 
     pop esi
@@ -599,13 +618,10 @@ RevealAreaStep proc pos:DWORD
         .ENDIF 
     .ENDIF 
  
-    mov ebx, pos 
- 
-    mov eax, GRID_WIDTH 
-    dec eax 
+    mov ebx, pos
  
     ; Right side 
-    .IF remainder < eax
+    .IF remainder < GRID_WIDTH - 1
         add ebx, 1 
         invoke RevealAreaStep, ebx
  
@@ -698,7 +714,7 @@ HandleMouse proc hWnd:HWND, lParam:LPARAM, isLeftClick: BYTE
         invoke GetArrayElementXY, OFFSET visibilityArray, x, y
         .IF eax != 2
             invoke GetArrayElementXY, OFFSET grid, x, y
-            .IF eax == -1
+            .IF eax == MINE
                 invoke StopGame, hWnd
             .ELSE
                 .IF eax == 0
@@ -786,8 +802,8 @@ DrawTime endp
 
 DrawMines proc hDC:HDC, hMemDC:HDC
     invoke DrawBitmap, hDC, hMemDC, mineBitmap, 192, 300
-    invoke dwtoa, leftMines, OFFSET drawText
-    invoke TextOut, hDC, 215, 301, ADDR drawText, SIZEOF drawText - 1
+    invoke dwtoa, leftMines, OFFSET minesCountText
+    invoke TextOut, hDC, 215, 301, ADDR minesCountText, SIZEOF minesCountText - 1
 
     ret
 DrawMines endp
@@ -847,7 +863,7 @@ DrawGrid proc hDC:HDC, hMemDC:HDC
                 invoke GetArrayElementXY, OFFSET grid, i, j
                 mov currentCount, eax
 
-                .IF currentCount == -1
+                .IF currentCount == MINE
                     ; Draw mine
                     invoke ConvertToArrayPos, i, j
                     .IF eax == lastClickPosition

@@ -47,6 +47,7 @@ GetArrayElementXY proto     :DWORD, :DWORD, :DWORD
 
 ClearGrid proto
 GenerateGrid proto          :DWORD, :DWORD
+InitMineGenArray proto
 IncrementIfMine proto       :DWORD
 
 NewGame proto               :HWND
@@ -83,6 +84,7 @@ DrawGrid proto              :HDC, :HDC
     GRID_WIDTH              EQU 12
     GRID_HEIGHT             EQU 15
     GRID_SIZE               EQU GRID_WIDTH * GRID_HEIGHT
+    MINE			    EQU 10
 
     ; Bitmap identifiers
     ; ******************
