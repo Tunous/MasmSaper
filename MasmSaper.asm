@@ -263,7 +263,6 @@ ClearGrid proc
 ClearGrid endp
 
 GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
-    LOCAL mines:DWORD
     LOCAL ignorePos:DWORD
 
     push ebx
@@ -296,8 +295,7 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
     xor ebx, ebx
 
     .WHILE ebx < GRID_SIZE
-        mov mines, 0                                ; Reset count
-        mov ecx, [esi + 4 * ebx]                    ; Get grid element
+        mov ecx, [esi + 4 * ebx]
 
         ; Skip mines
         .IF ecx == MINE
@@ -305,99 +303,8 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
             .CONTINUE
         .ENDIF
 
-        ; Store current position
-        push ebx
-
-        invoke Divide, ebx, GRID_WIDTH
-
-        .IF edx > 0
-            ; ...
-            ; XO.
-            ; ...
-            sub ebx, 1
-            invoke IncrementIfMine, mines
-            mov mines, eax
-
-            ; X..
-            ; .O.
-            ; ...
-            .IF ebx >= GRID_WIDTH
-                sub ebx, GRID_WIDTH
-                invoke IncrementIfMine, mines
-                mov mines, eax
-                add ebx, GRID_WIDTH
-            .ENDIF
-
-            add ebx, GRID_WIDTH
-
-            ; ...
-            ; .O.
-            ; X..
-            .IF ebx < GRID_SIZE
-                invoke IncrementIfMine, mines
-                mov mines, eax
-            .ENDIF
-
-            pop ebx
-            push ebx
-        .ENDIF
-
-        .IF edx < GRID_WIDTH - 1
-            ; ...
-            ; .OX
-            ; ...
-            add ebx, 1
-            invoke IncrementIfMine, mines
-            mov mines, eax
-
-            ; ..X
-            ; .O.
-            ; ...
-            .IF ebx >= GRID_WIDTH
-                sub ebx, GRID_WIDTH
-                invoke IncrementIfMine, mines
-                mov mines, eax
-                add ebx, GRID_WIDTH
-            .ENDIF
-
-            ; ...
-            ; .O.
-            ; ..X
-            add ebx, GRID_WIDTH
-
-            .IF ebx < GRID_SIZE
-                invoke IncrementIfMine, mines
-                mov mines, eax
-            .ENDIF
-
-            pop ebx
-            push ebx
-        .ENDIF
-
-        ; .X.
-        ; .O.
-        ; ...
-        .IF ebx >= GRID_WIDTH
-            sub ebx, GRID_WIDTH
-            invoke IncrementIfMine, mines
-            mov mines, eax
-
-            pop ebx
-            push ebx
-        .ENDIF
-
-        ; ...
-        ; .O.
-        ; .X.
-        add ebx, GRID_WIDTH
-        .IF ebx < GRID_SIZE
-            invoke IncrementIfMine, mines
-            mov mines, eax
-        .ENDIF
-
-        pop ebx
-        
-        m2m [esi + 4 * ebx], mines
+        invoke GridTileAction, ebx, FALSE
+        m2m [esi + 4 * ebx], eax
 
         inc ebx
     .ENDW
@@ -409,6 +316,137 @@ GenerateGrid proc ignoreX:DWORD, ignoreY:DWORD
 
     ret
 GenerateGrid endp
+
+GridTileAction proc pos:DWORD, revealTiles:BYTE
+    LOCAL mines:DWORD
+    LOCAL remainder:DWORD
+
+    push ebx
+
+    mov mines, 0
+    mov ebx, pos
+
+    invoke Divide, ebx, GRID_WIDTH
+    mov remainder, edx
+
+    .IF remainder > 0
+        ; ...
+        ; XO.
+        ; ...
+        sub ebx, 1
+        .IF revealTiles
+            invoke RevealAreaStep, ebx
+        .ELSE
+            invoke IncrementIfMine, mines
+            mov mines, eax
+        .ENDIF
+
+        ; X..
+        ; .O.
+        ; ...
+        .IF ebx >= GRID_WIDTH
+            sub ebx, GRID_WIDTH
+            .IF revealTiles
+                invoke RevealAreaStep, ebx
+            .ELSE
+                invoke IncrementIfMine, mines
+                mov mines, eax
+            .ENDIF
+            add ebx, GRID_WIDTH
+        .ENDIF
+
+        add ebx, GRID_WIDTH
+
+        ; ...
+        ; .O.
+        ; X..
+        .IF ebx < GRID_SIZE
+            .IF revealTiles
+                invoke RevealAreaStep, ebx
+            .ELSE
+                invoke IncrementIfMine, mines
+                mov mines, eax
+            .ENDIF
+        .ENDIF
+
+        mov ebx, pos
+    .ENDIF
+
+    .IF remainder < GRID_WIDTH - 1
+        ; ...
+        ; .OX
+        ; ...
+        add ebx, 1
+        .IF revealTiles
+            invoke RevealAreaStep, ebx
+        .ELSE
+            invoke IncrementIfMine, mines
+            mov mines, eax
+        .ENDIF
+
+        ; ..X
+        ; .O.
+        ; ...
+        .IF ebx >= GRID_WIDTH
+            sub ebx, GRID_WIDTH
+            .IF revealTiles
+                invoke RevealAreaStep, ebx
+            .ELSE
+                invoke IncrementIfMine, mines
+                mov mines, eax
+            .ENDIF
+            add ebx, GRID_WIDTH
+        .ENDIF
+
+        ; ...
+        ; .O.
+        ; ..X
+        add ebx, GRID_WIDTH
+
+        .IF ebx < GRID_SIZE
+            .IF revealTiles
+                invoke RevealAreaStep, ebx
+            .ELSE
+                invoke IncrementIfMine, mines
+                mov mines, eax
+            .ENDIF
+        .ENDIF
+
+        mov ebx, pos
+    .ENDIF
+
+    ; .X.
+    ; .O.
+    ; ...
+    .IF ebx >= GRID_WIDTH
+        sub ebx, GRID_WIDTH
+        .IF revealTiles
+            invoke RevealAreaStep, ebx
+        .ELSE
+            invoke IncrementIfMine, mines
+            mov mines, eax
+        .ENDIF
+
+        mov ebx, pos
+    .ENDIF
+
+    ; ...
+    ; .O.
+    ; .X.
+    add ebx, GRID_WIDTH
+    .IF ebx < GRID_SIZE
+        .IF revealTiles
+            invoke RevealAreaStep, ebx
+        .ELSE
+            invoke IncrementIfMine, mines
+            mov mines, eax
+        .ENDIF
+    .ENDIF
+
+    pop ebx
+
+    return mines
+GridTileAction endp
 
 InitMineGenArray proc
     push esi
@@ -567,8 +605,6 @@ RevealArea proc x:DWORD, y:DWORD
 RevealArea endp
 
 RevealAreaStep proc pos:DWORD
-    LOCAL remainder:DWORD
-
     ; Skip already viewed tiles
     invoke GetArrayElement, OFFSET viewedTiles, pos
     .IF eax == TRUE
@@ -583,78 +619,20 @@ RevealAreaStep proc pos:DWORD
     mov ebx, pos
     m2m [esi + 4 * ebx], TRUE
 
+    pop esi
+    pop ebx
+
     ; Reveal the tile
     invoke RevealAt, pos, FALSE
-
-    pop esi
 
     ; Stop revealing if we are no longer on empty area 
     invoke GetArrayElement, OFFSET grid, pos 
     .IF eax != 0
-        pop ebx
         ret 
-    .ENDIF 
+    .ENDIF
+
+    invoke GridTileAction, pos, TRUE
  
-    invoke Divide, ebx, GRID_WIDTH
-    mov remainder, edx
- 
-    mov ebx, pos 
- 
-    ; Left side 
-    .IF remainder > 0 
-        sub ebx, 1 
-        invoke RevealAreaStep, ebx 
-         
-        .IF ebx >= GRID_WIDTH
-            sub ebx, GRID_WIDTH
-            invoke RevealAreaStep, ebx
-            add ebx, GRID_WIDTH
-        .ENDIF 
-  
-        add ebx, GRID_WIDTH 
- 
-        .IF ebx < GRID_SIZE 
-            invoke RevealAreaStep, ebx 
-        .ENDIF 
-    .ENDIF 
- 
-    mov ebx, pos
- 
-    ; Right side 
-    .IF remainder < GRID_WIDTH - 1
-        add ebx, 1 
-        invoke RevealAreaStep, ebx
- 
-        .IF ebx >= GRID_WIDTH
-            sub ebx, GRID_WIDTH
-            invoke RevealAreaStep, ebx
-            add ebx, GRID_WIDTH
-        .ENDIF 
- 
-        add ebx, GRID_WIDTH 
- 
-        .IF ebx < GRID_SIZE 
-            invoke RevealAreaStep, ebx
-        .ENDIF 
-    .ENDIF 
- 
-    mov ebx, pos 
- 
-    ; Top tile 
-    .IF ebx >= GRID_WIDTH 
-        sub ebx, GRID_WIDTH 
-        invoke RevealAreaStep, ebx 
-    .ENDIF 
- 
-    mov ebx, pos
-    add ebx, GRID_WIDTH 
-     
-    ; Bottom tile 
-    .IF ebx < GRID_SIZE 
-        invoke RevealAreaStep, ebx 
-    .ENDIF 
- 
-    pop ebx
     ret
 RevealAreaStep endp
 

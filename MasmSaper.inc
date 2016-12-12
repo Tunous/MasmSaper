@@ -47,6 +47,7 @@ GetArrayElementXY proto     :DWORD, :DWORD, :DWORD
 
 ClearGrid proto
 GenerateGrid proto          :DWORD, :DWORD
+GridTileAction proto        :DWORD, :BYTE
 InitMineGenArray proto
 IncrementIfMine proto       :DWORD
 
